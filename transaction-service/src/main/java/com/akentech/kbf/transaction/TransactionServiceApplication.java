@@ -1,11 +1,10 @@
-package com.akentech.kbf.investment;
+package com.akentech.kbf.transaction;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-
 @SpringBootApplication
-public class InvestmentServiceApplication {
+public class TransactionServiceApplication {
     public static void main(String[] args) {
-        SpringApplication.run(InvestmentServiceApplication.class, args);
+        SpringApplication.run(TransactionServiceApplication.class, args);
     }
 }
