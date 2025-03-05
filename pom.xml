@@ -12,6 +12,7 @@
         <module>income-service</module>
         <module>expense-service</module>
         <module>investment-service</module>
+        <module>transaction-service</module>
 
     </modules>
 
