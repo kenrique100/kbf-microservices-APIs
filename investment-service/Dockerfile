@@ -5,7 +5,7 @@ FROM eclipse-temurin:21-jdk-jammy AS build
 WORKDIR /app
 
 # Copy the JAR file into the container
-COPY target/investments-service-0.0.1-SNAPSHOT.jar app.jar
+COPY target/investment-service-0.0.1-SNAPSHOT.jar app.jar
 
 # Expose the application port
 EXPOSE 8083
