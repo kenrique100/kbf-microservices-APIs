@@ -9,9 +9,9 @@
         <version>1.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>investments-service</artifactId>
-    <name>Investments Service</name>
-    <description>Investments Service Module</description>
+    <artifactId>investment-service</artifactId>
+    <name>Investment Service</name>
+    <description>Investment Service Module</description>
     <version>0.0.1-SNAPSHOT</version>
 
     <properties>
@@ -112,7 +112,7 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>3.4.3</version> <!-- Specify the Spring Boot Maven Plugin version -->
+                <version>3.4.3</version>
                 <configuration>
                     <excludes>
                         <exclude>
