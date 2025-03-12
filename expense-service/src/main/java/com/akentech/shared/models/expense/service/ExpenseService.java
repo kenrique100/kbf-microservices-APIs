@@ -1,6 +1,7 @@
-package com.akentech.kbf.expense.service;
+package com.akentech.shared.models.expense.service;
 
-import com.akentech.kbf.expense.model.Expense;
+
+import com.akentech.shared.models.Expense;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 

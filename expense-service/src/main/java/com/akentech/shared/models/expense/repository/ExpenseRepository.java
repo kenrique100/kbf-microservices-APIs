@@ -1,6 +1,7 @@
-package com.akentech.kbf.expense.repository;
+package com.akentech.shared.models.expense.repository;
 
-import com.akentech.kbf.expense.model.Expense;
+
+import com.akentech.shared.models.Expense;
 import org.springframework.data.mongodb.repository.ReactiveMongoRepository;
 import reactor.core.publisher.Mono;
 

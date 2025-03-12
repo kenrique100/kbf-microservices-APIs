@@ -1,7 +1,8 @@
-package com.akentech.kbf.expense.controller;
+package com.akentech.shared.models.expense.controller;
 
-import com.akentech.kbf.expense.model.Expense;
-import com.akentech.kbf.expense.service.ExpenseService;
+
+import com.akentech.shared.models.Expense;
+import com.akentech.shared.models.expense.service.ExpenseService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -1,9 +1,10 @@
-package com.akentech.kbf.expense.service.impl;
+package com.akentech.shared.models.expense.service.impl;
 
-import com.akentech.kbf.expense.model.Expense;
-import com.akentech.kbf.expense.repository.ExpenseRepository;
-import com.akentech.kbf.expense.service.ExpenseService;
-import com.akentech.kbf.expense.utils.LoggingUtil;
+
+import com.akentech.shared.models.Expense;
+import com.akentech.shared.models.expense.repository.ExpenseRepository;
+import com.akentech.shared.models.expense.service.ExpenseService;
+import com.akentech.shared.models.expense.utils.LoggingUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
