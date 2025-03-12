@@ -1,6 +1,6 @@
-package com.akentech.kbf.income.repository;
+package com.akentech.shared.models.income.repository;
 
-import com.akentech.kbf.income.model.Income;
+import com.akentech.shared.models.Income;
 import org.springframework.data.mongodb.repository.ReactiveMongoRepository;
 import reactor.core.publisher.Mono;
 

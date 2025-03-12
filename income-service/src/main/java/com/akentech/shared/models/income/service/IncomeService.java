@@ -1,6 +1,6 @@
-package com.akentech.kbf.income.service;
+package com.akentech.shared.models.income.service;
 
-import com.akentech.kbf.income.model.Income;
+import com.akentech.shared.models.Income;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 

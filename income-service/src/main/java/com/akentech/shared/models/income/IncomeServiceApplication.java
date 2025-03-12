@@ -1,4 +1,4 @@
-package com.akentech.kbf.income;
+package com.akentech.shared.models.income;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

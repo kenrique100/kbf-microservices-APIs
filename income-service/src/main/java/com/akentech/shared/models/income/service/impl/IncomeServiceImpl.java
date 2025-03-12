@@ -1,9 +1,9 @@
-package com.akentech.kbf.income.service.impl;
+package com.akentech.shared.models.income.service.impl;
 
-import com.akentech.kbf.income.model.Income;
-import com.akentech.kbf.income.repository.IncomeRepository;
-import com.akentech.kbf.income.service.IncomeService;
-import com.akentech.kbf.income.utils.LoggingUtil;
+import com.akentech.shared.models.Income;
+import com.akentech.shared.models.income.repository.IncomeRepository;
+import com.akentech.shared.models.income.service.IncomeService;
+import com.akentech.shared.models.income.utils.LoggingUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;

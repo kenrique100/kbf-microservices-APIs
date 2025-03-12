@@ -1,7 +1,7 @@
-package com.akentech.kbf.income;
+package com.akentech.shared.models.income;
 
-import com.akentech.kbf.income.model.Income;
-import com.akentech.kbf.income.repository.IncomeRepository;
+import com.akentech.shared.models.Income;
+import com.akentech.shared.models.income.repository.IncomeRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
