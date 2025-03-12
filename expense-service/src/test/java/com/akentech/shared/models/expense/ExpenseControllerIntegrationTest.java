@@ -1,7 +1,7 @@
-package com.akentech.kbf.expense;
+package com.akentech.shared.models.expense;
 
-import com.akentech.kbf.expense.model.Expense;
-import com.akentech.kbf.expense.repository.ExpenseRepository;
+import com.akentech.shared.models.Expense;
+import com.akentech.shared.models.expense.repository.ExpenseRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
