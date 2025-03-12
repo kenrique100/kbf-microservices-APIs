@@ -1,4 +1,4 @@
-package com.akentech.kbf.investment;
+package com.akentech.shared.models.investment;
 
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;

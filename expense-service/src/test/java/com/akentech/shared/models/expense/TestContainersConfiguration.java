@@ -1,4 +1,4 @@
-package com.akentech.kbf.expense;
+package com.akentech.shared.models.expense;
 
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
