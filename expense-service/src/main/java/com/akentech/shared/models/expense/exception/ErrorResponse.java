@@ -1,4 +1,4 @@
-package com.akentech.kbf.expense.exception;
+package com.akentech.shared.models.expense.exception;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
