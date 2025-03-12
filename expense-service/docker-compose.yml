@@ -1,0 +1,17 @@
+services:
+  expense-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: expense-service
+    restart: unless-stopped
+    environment:
+      SPRING_DATA_MONGODB_URI: mongodb+srv://akentech:Bundes9898@cluster1.ftk04.mongodb.net/expense-service?retryWrites=true&w=majority&appName=Cluster1
+      SPRING_PROFILES_ACTIVE: prod
+    ports:
+      - "9082:8082"
+    networks:
+      - kbf
+networks:
+  kbf:
+    external: true

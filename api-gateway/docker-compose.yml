@@ -1,0 +1,63 @@
+services:
+  # Keycloak and MySQL
+  keycloak-mysql:
+    container_name: keycloak-mysql
+    image: mariadb:10.11
+    volumes:
+      - ./volume-data/mysql_keycloak_data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: Bundes9898
+      MYSQL_DATABASE: keycloak
+      MYSQL_USER: root
+      MYSQL_PASSWORD: Bundes9898
+    networks:
+      - kbf
+    restart: unless-stopped
+
+  keycloak:
+    container_name: keycloak
+    image: quay.io/keycloak/keycloak:24.0.1
+    command: [ "start-dev", "--import-realm" ]
+    environment:
+      DB_VENDOR: mariadb
+      DB_ADDR: keycloak-mysql
+      DB_DATABASE: keycloak
+      DB_USER: root
+      DB_PASSWORD: Bundes9898
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: Bundes9898
+    ports:
+      - "8182:8080"
+    volumes:
+      - ./docker/keycloak/realms/:/opt/keycloak/data/import/
+    depends_on:
+      - keycloak-mysql
+    networks:
+      - kbf
+    restart: unless-stopped
+
+  # API Gateway Service
+  api-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SERVER_PORT: 8085
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8080/realms/spring-kbf-microservices-security-realm
+      SPRINGDOC_API_DOCS_ENABLED: "true"
+      SPRINGDOC_API_DOCS_PATH: "/v3/api-docs"
+      SPRINGDOC_SWAGGER_UI_ENABLED: "true"
+      SPRINGDOC_SWAGGER_UI_PATH: "/swagger-ui.html"
+    ports:
+      - "9085:8085"
+    depends_on:
+      - keycloak
+    networks:
+      - kbf
+    restart: unless-stopped
+
+networks:
+  kbf:
+    external: true
