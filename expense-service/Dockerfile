@@ -1,13 +1,16 @@
 # Build stage
 FROM eclipse-temurin:21-jdk-jammy AS build
-# Set the working directory
 WORKDIR /app
 
-# Copy the JAR file into the container
-COPY target/expense-service-0.0.1-SNAPSHOT.jar app.jar
+# Copy project source code
+COPY . .
 
-# Expose the application port
+# Runtime stage
+FROM eclipse-temurin:21-jdk-jammy
+WORKDIR /app
+
+# Copy the built JAR from the build stage
+COPY --from=build /app/target/expense-service-0.0.1-SNAPSHOT.jar app.jar
+
 EXPOSE 8082
-
-# Set the entrypoint to run the JAR file
 ENTRYPOINT ["java", "-jar", "app.jar"]
