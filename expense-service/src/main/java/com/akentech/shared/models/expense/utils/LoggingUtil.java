@@ -1,4 +1,4 @@
-package com.akentech.kbf.expense.utils;
+package com.akentech.shared.models.expense.utils;
 
 public class LoggingUtil {
     public static void logInfo(String message) {
