@@ -1,4 +1,4 @@
-package com.akentech.kbf.transaction.model;
+package com.akentech.shared.models.transaction.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

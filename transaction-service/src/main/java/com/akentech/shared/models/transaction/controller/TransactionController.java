@@ -1,8 +1,8 @@
-package com.akentech.kbf.transaction.controller;
+package com.akentech.shared.models.transaction.controller;
 
-import com.akentech.kbf.transaction.exception.TransactionException;
-import com.akentech.kbf.transaction.model.dto.DashboardReportDTO;
-import com.akentech.kbf.transaction.service.TransactionService;
+import com.akentech.shared.models.transaction.exception.TransactionException;
+import com.akentech.shared.models.transaction.model.dto.DashboardReportDTO;
+import com.akentech.shared.models.transaction.service.TransactionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

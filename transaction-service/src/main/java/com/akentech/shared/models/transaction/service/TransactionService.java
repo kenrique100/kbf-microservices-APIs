@@ -1,6 +1,6 @@
-package com.akentech.kbf.transaction.service;
+package com.akentech.shared.models.transaction.service;
 
-import com.akentech.kbf.transaction.model.dto.DashboardReportDTO;
+import com.akentech.shared.models.transaction.model.dto.DashboardReportDTO;
 import reactor.core.publisher.Mono;
 
 public interface TransactionService {
