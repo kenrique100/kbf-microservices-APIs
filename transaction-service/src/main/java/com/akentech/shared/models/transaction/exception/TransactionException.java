@@ -1,4 +1,4 @@
-package com.akentech.kbf.transaction.exception;
+package com.akentech.shared.models.transaction.exception;
 
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
