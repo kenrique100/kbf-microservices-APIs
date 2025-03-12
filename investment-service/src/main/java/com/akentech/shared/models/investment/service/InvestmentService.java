@@ -1,6 +1,6 @@
-package com.akentech.kbf.investment.service;
+package com.akentech.shared.models.investment.service;
 
-import com.akentech.kbf.investment.model.Investment;
+import com.akentech.shared.models.Investment;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 

@@ -1,4 +1,4 @@
-package com.akentech.kbf.investment;
+package com.akentech.shared.models.investment;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

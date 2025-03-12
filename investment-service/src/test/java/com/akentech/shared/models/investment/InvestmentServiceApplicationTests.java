@@ -1,4 +1,4 @@
-package com.akentech.kbf.investment;
+package com.akentech.shared.models.investment;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

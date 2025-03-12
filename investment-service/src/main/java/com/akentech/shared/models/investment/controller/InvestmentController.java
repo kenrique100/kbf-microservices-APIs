@@ -1,9 +1,9 @@
-package com.akentech.kbf.investment.controller;
+package com.akentech.shared.models.investment.controller;
 
-import com.akentech.kbf.investment.model.Investment;
-import com.akentech.kbf.investment.model.InvestmentRequest;
-import com.akentech.kbf.investment.model.UpdateInvestmentRequest;
-import com.akentech.kbf.investment.service.InvestmentService;
+import com.akentech.shared.models.Investment;
+import com.akentech.shared.models.InvestmentRequest;
+import com.akentech.shared.models.UpdateInvestmentRequest;
+import com.akentech.shared.models.investment.service.InvestmentService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
@@ -60,7 +60,8 @@ public class InvestmentController {
                 .then(Mono.just(ResponseEntity.noContent().build()));
     }
 
-    @PutMapping("/{id}/deduct")
+
+    @PatchMapping("/{id}/deduct")
     public Mono<ResponseEntity<Investment>> deductFromInvestment(
             @PathVariable @NotBlank(message = "ID cannot be blank") String id,
             @RequestBody @Valid UpdateInvestmentRequest request) {
@@ -69,7 +70,8 @@ public class InvestmentController {
                 .defaultIfEmpty(ResponseEntity.notFound().build());
     }
 
-    @PutMapping("/{id}/add")
+
+    @PatchMapping("/{id}/add")
     public Mono<ResponseEntity<Investment>> addToInvestment(
             @PathVariable @NotBlank(message = "ID cannot be blank") String id,
             @RequestBody @Valid UpdateInvestmentRequest request) {

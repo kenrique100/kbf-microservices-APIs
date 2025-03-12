@@ -1,4 +1,4 @@
-package com.akentech.kbf.investment.model;
+package com.akentech.shared.models;
 
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;

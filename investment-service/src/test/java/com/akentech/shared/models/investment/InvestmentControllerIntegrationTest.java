@@ -1,9 +1,9 @@
-package com.akentech.kbf.investment;
+package com.akentech.shared.models.investment;
 
-import com.akentech.kbf.investment.model.Investment;
-import com.akentech.kbf.investment.model.InvestmentRequest;
-import com.akentech.kbf.investment.model.UpdateInvestmentRequest;
-import com.akentech.kbf.investment.repository.InvestmentRepository;
+import com.akentech.shared.models.Investment;
+import com.akentech.shared.models.InvestmentRequest;
+import com.akentech.shared.models.UpdateInvestmentRequest;
+import com.akentech.shared.models.investment.repository.InvestmentRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

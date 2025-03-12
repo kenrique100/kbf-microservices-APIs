@@ -1,11 +1,11 @@
-package com.akentech.kbf.investment.service.impl;
+package com.akentech.shared.models.investment.service.impl;
 
-import com.akentech.kbf.investment.exception.InsufficientBalanceException;
-import com.akentech.kbf.investment.exception.InvalidRequestException;
-import com.akentech.kbf.investment.model.Investment;
-import com.akentech.kbf.investment.repository.InvestmentRepository;
-import com.akentech.kbf.investment.service.InvestmentService;
-import com.akentech.kbf.investment.utils.ValidationUtil;
+import com.akentech.shared.models.Investment;
+import com.akentech.shared.models.investment.exception.InsufficientBalanceException;
+import com.akentech.shared.models.investment.exception.InvalidRequestException;
+import com.akentech.shared.models.investment.repository.InvestmentRepository;
+import com.akentech.shared.models.investment.service.InvestmentService;
+import com.akentech.shared.models.investment.utils.ValidationUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
