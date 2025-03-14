@@ -8,6 +8,7 @@ services:
     environment:
       SPRING_DATA_MONGODB_URI: mongodb+srv://akentech:Bundes9898@cluster1.ftk04.mongodb.net/income-service?retryWrites=true&w=majority&appName=Cluster1
       SPRING_PROFILES_ACTIVE: prod
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: broker:29092
     ports:
       - "9081:8081"
     networks:

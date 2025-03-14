@@ -1,4 +1,5 @@
 services:
+  # Portainer
   portainer:
     image: portainer/portainer-ce
     container_name: portainer
@@ -12,12 +13,123 @@ services:
     networks:
       - kbf
 
-# Define networks
+  # Zookeeper
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
+    restart: unless-stopped
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_INIT_LIMIT: 10
+      ZOOKEEPER_SYNC_LIMIT: 5
+    networks:
+      - kbf
+    volumes:
+      - zookeeper-data:/var/lib/zookeeper/data
+      - zookeeper-log:/var/lib/zookeeper/log
+
+  # Kafka Broker
+  broker:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: broker
+    restart: unless-stopped
+    ports:
+      - "19092:19092"
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:29092,PLAINTEXT_HOST://localhost:19092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_LOG4J_LOGGERS: "kafka=DEBUG,kafka.controller=DEBUG,kafka.producer.async.DefaultEventHandler=DEBUG,state.change.logger=DEBUG"
+    depends_on:
+      - zookeeper
+    healthcheck:
+      test: ["CMD", "kafka-topics", "--list", "--bootstrap-server", "broker:29092"]
+      interval: 20s
+      timeout: 10s
+      retries: 15
+    networks:
+      - kbf
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+
+  # Schema Registry
+  schema-registry:
+    image: confluentinc/cp-schema-registry:7.5.0
+    hostname: schema-registry
+    container_name: schema-registry
+    restart: unless-stopped
+    depends_on:
+      - broker
+    ports:
+      - "8086:8080"
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: 'broker:29092'
+      SCHEMA_REGISTRY_LISTENERS: http://schema-registry:8086
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://schema-registry:8086"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - kbf
+
+  # AKHQ (Kafka UI)
+  akhq:
+    image: tchiotludo/akhq
+    container_name: akhq
+    restart: unless-stopped
+    ports:
+      - "8087:8080"
+    environment:
+      AKHQ_CONFIGURATION: |
+        akhq:
+          connections:
+            local:
+              properties:
+                bootstrap.servers: "broker:29092"
+    depends_on:
+      - broker
+    networks:
+      - kbf
+
+  # MongoDB
+  mongodb:
+    image: mongo:6.0
+    container_name: mongodb
+    restart: unless-stopped
+    ports:
+      - "27018:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: Bundes9898
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - kbf
+
+# Networks
 networks:
   kbf:
     external: true
 
-# Define volumes
+# Volumes
 volumes:
+  zookeeper-data:
+    driver: local
+  zookeeper-log:
+    driver: local
   portainer_data:
+    driver: local
+  mongodb_data:
+    driver: local
+  kafka-data:
     driver: local
