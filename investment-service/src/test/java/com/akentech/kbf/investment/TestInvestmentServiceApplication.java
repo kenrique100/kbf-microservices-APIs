@@ -1,4 +1,4 @@
-package com.akentech.shared.models.investment;
+package com.akentech.kbf.investment;
 
 import org.springframework.boot.SpringApplication;
 import org.testcontainers.utility.TestcontainersConfiguration;

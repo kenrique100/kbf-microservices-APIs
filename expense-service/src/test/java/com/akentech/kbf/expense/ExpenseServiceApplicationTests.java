@@ -1,4 +1,4 @@
-package com.akentech.shared.models.expense;
+package com.akentech.kbf.expense;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

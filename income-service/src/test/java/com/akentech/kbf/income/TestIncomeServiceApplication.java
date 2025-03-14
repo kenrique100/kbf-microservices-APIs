@@ -1,4 +1,4 @@
-package com.akentech.shared.models.income;
+package com.akentech.kbf.income;
 
 import org.springframework.boot.SpringApplication;
 import org.testcontainers.utility.TestcontainersConfiguration;
