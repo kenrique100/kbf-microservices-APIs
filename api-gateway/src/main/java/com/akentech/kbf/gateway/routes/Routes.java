@@ -1,4 +1,4 @@
-package com.akentech.shared.models.routes;
+package com.akentech.kbf.gateway.routes;
 
 import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
