@@ -1,4 +1,4 @@
-package com.akentech.shared.models.transaction.config;
+package com.akentech.kbf.transaction.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
