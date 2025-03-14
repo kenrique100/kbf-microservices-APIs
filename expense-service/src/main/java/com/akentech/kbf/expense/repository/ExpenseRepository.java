@@ -1,4 +1,4 @@
-package com.akentech.shared.models.expense.repository;
+package com.akentech.kbf.expense.repository;
 
 
 import com.akentech.shared.models.Expense;

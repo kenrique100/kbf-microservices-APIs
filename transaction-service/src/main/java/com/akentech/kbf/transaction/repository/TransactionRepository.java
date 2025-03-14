@@ -1,6 +1,6 @@
-package com.akentech.shared.models.transaction.repository;
+package com.akentech.kbf.transaction.repository;
 
-import com.akentech.shared.models.transaction.model.Transaction;
+import com.akentech.kbf.transaction.model.Transaction;
 import org.springframework.data.mongodb.repository.ReactiveMongoRepository;
 import reactor.core.publisher.Flux;
 
