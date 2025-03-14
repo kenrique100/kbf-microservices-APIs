@@ -1,4 +1,4 @@
-package com.akentech.shared.models.income.utils;
+package com.akentech.kbf.income.utils;
 
 public class LoggingUtil {
     public static void logInfo(String message) {
