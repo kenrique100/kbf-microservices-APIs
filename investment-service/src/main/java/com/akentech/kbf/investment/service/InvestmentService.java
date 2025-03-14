@@ -1,4 +1,4 @@
-package com.akentech.shared.models.investment.service;
+package com.akentech.kbf.investment.service;
 
 import com.akentech.shared.models.Investment;
 import reactor.core.publisher.Flux;

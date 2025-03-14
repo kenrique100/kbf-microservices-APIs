@@ -1,4 +1,4 @@
-package com.akentech.shared.models.income.service;
+package com.akentech.kbf.income.service;
 
 import com.akentech.shared.models.Income;
 import reactor.core.publisher.Flux;

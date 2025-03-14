@@ -1,4 +1,4 @@
-package com.akentech.shared.models.expense.service;
+package com.akentech.kbf.expense.service;
 
 
 import com.akentech.shared.models.Expense;
