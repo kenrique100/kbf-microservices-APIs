@@ -1,4 +1,4 @@
-package com.akentech.shared.models.income;
+package com.akentech.kbf.income;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
