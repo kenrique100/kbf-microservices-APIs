@@ -9,6 +9,8 @@
     <file url="file://$PROJECT_DIR$/income-service/src/main/resources" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/investment-service/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/investment-service/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/kafka-utility/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/kafka-utility/src/main/resources" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/shared-models/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/shared-models/src/main/resources" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/src/main/java" charset="UTF-8" />
