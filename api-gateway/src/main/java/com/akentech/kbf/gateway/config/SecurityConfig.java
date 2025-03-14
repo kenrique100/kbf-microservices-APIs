@@ -1,4 +1,4 @@
-package com.akentech.shared.models.config;
+package com.akentech.kbf.gateway.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
