@@ -1,4 +1,4 @@
-package com.akentech.shared.models.expense.exception;
+package com.akentech.kbf.expense.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ExceptionHandler;

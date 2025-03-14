@@ -1,4 +1,4 @@
-package com.akentech.shared.models.income.exception;
+package com.akentech.kbf.income.exception;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

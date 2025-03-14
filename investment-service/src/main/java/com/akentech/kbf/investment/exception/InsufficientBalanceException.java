@@ -1,4 +1,4 @@
-package com.akentech.shared.models.investment.exception;
+package com.akentech.kbf.investment.exception;
 
 public class InsufficientBalanceException extends RuntimeException {
     public InsufficientBalanceException(String message) {
