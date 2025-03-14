@@ -1,10 +1,11 @@
-package com.akentech.shared.models.transaction;
+package com.akentech.kbf.gateway;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+
 @SpringBootApplication
-public class TransactionServiceApplication {
+public class ApiGatewayServiceApplication {
     public static void main(String[] args) {
-        SpringApplication.run(TransactionServiceApplication.class, args);
+        SpringApplication.run(ApiGatewayServiceApplication.class, args);
     }
 }
