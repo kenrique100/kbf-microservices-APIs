@@ -1,6 +1,6 @@
-package com.akentech.shared.models.transaction.model.dto;
+package com.akentech.kbf.transaction.model.dto;
 
-import com.akentech.shared.models.transaction.model.Transaction;
+import com.akentech.kbf.transaction.model.Transaction;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
