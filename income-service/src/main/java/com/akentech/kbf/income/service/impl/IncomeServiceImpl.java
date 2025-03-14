@@ -1,17 +1,17 @@
-package com.akentech.shared.models.income.service.impl;
+package com.akentech.kbf.income.service.impl;
 
+import com.akentech.kbf.income.repository.IncomeRepository;
+import com.akentech.kbf.income.service.IncomeService;
+import com.akentech.kbf.kafka.utils.LoggingUtil;
 import com.akentech.shared.models.Income;
-import com.akentech.shared.models.income.repository.IncomeRepository;
-import com.akentech.shared.models.income.service.IncomeService;
-import com.akentech.shared.models.income.utils.LoggingUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import org.bson.types.ObjectId;
-
 import java.math.BigDecimal;
 
 @Service
@@ -19,6 +19,7 @@ import java.math.BigDecimal;
 public class IncomeServiceImpl implements IncomeService {
 
     private final IncomeRepository incomeRepository;
+    private final KafkaTemplate<String, Object> KafkaTemplate;
 
     @Override
     public Flux<Income> getAllIncomes() {
@@ -55,7 +56,11 @@ public class IncomeServiceImpl implements IncomeService {
     public Mono<Income> createIncome(Income income) {
         LoggingUtil.logInfo("Creating new income: " + income.getReason());
         income.calculateDueBalance();
-        return incomeRepository.save(income);
+        return incomeRepository.save(income)
+                .doOnSuccess(savedIncome -> {
+                    KafkaTemplate.send("income-topic", savedIncome);
+                    LoggingUtil.logInfo("Income event published: " + savedIncome.getId());
+                });
     }
 
     @Override
@@ -102,7 +107,8 @@ public class IncomeServiceImpl implements IncomeService {
                     if (!exists) {
                         return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Income not found"));
                     }
-                    return incomeRepository.deleteById(id);
+                    return incomeRepository.deleteById(id)
+                            .doOnSuccess(unused -> LoggingUtil.logInfo("Income deleted with ID: " + id));
                 });
     }
 }

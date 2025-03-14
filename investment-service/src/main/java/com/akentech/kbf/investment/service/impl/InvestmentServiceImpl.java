@@ -1,12 +1,14 @@
-package com.akentech.shared.models.investment.service.impl;
+package com.akentech.kbf.investment.service.impl;
 
+import com.akentech.kbf.investment.exception.InsufficientBalanceException;
+import com.akentech.kbf.investment.exception.InvalidRequestException;
+import com.akentech.kbf.investment.repository.InvestmentRepository;
+import com.akentech.kbf.investment.service.InvestmentService;
+import com.akentech.kbf.investment.utils.ValidationUtil;
+import com.akentech.kbf.kafka.utils.LoggingUtil;
 import com.akentech.shared.models.Investment;
-import com.akentech.shared.models.investment.exception.InsufficientBalanceException;
-import com.akentech.shared.models.investment.exception.InvalidRequestException;
-import com.akentech.shared.models.investment.repository.InvestmentRepository;
-import com.akentech.shared.models.investment.service.InvestmentService;
-import com.akentech.shared.models.investment.utils.ValidationUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -19,6 +21,7 @@ import java.time.LocalDate;
 public class InvestmentServiceImpl implements InvestmentService {
 
     private final InvestmentRepository investmentRepository;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
     @Override
     public Mono<Investment> createInvestment(BigDecimal initialAmount, String createdBy) {
@@ -37,7 +40,11 @@ public class InvestmentServiceImpl implements InvestmentService {
                 .updatedAt(LocalDate.now())
                 .build();
 
-        return investmentRepository.save(investment);
+        return investmentRepository.save(investment)
+                .doOnSuccess(savedInvestment -> {
+                    kafkaTemplate.send("investment-topic", savedInvestment);
+                    LoggingUtil.logInfo("Investment event published: " + savedInvestment.getId());
+                });
     }
 
     @Override
@@ -75,7 +82,8 @@ public class InvestmentServiceImpl implements InvestmentService {
         return ValidationUtil.validateId(id)
                 .flatMap(investmentRepository::findById)
                 .switchIfEmpty(Mono.error(new InvalidRequestException("Investment not found with ID: " + id)))
-                .flatMap(existingInvestment -> investmentRepository.deleteById(id));
+                .flatMap(existingInvestment -> investmentRepository.deleteById(id))
+                .doOnSuccess(unused -> LoggingUtil.logInfo("Investment deleted with ID: " + id));
     }
 
     @Override

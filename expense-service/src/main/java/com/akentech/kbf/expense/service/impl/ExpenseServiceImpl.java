@@ -1,12 +1,12 @@
-package com.akentech.shared.models.expense.service.impl;
-
+package com.akentech.kbf.expense.service.impl;
 
 import com.akentech.shared.models.Expense;
-import com.akentech.shared.models.expense.repository.ExpenseRepository;
-import com.akentech.shared.models.expense.service.ExpenseService;
-import com.akentech.shared.models.expense.utils.LoggingUtil;
+import com.akentech.kbf.expense.service.ExpenseService;
+import com.akentech.kbf.expense.repository.ExpenseRepository;
+import com.akentech.kbf.expense.utils.LoggingUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
@@ -19,6 +19,7 @@ import java.math.BigDecimal;
 public class ExpenseServiceImpl implements ExpenseService {
 
     private final ExpenseRepository expenseRepository;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
     @Override
     public Flux<Expense> getAllExpenses() {
@@ -55,7 +56,11 @@ public class ExpenseServiceImpl implements ExpenseService {
     public Mono<Expense> createExpense(Expense expense) {
         LoggingUtil.logInfo("Creating new expense: " + expense.getReason());
         expense.calculateDueBalance();
-        return expenseRepository.save(expense);
+        return expenseRepository.save(expense)
+                .doOnSuccess(savedExpense -> {
+                    kafkaTemplate.send("expense-topic", savedExpense);
+                    LoggingUtil.logInfo("Expense event published: " + savedExpense.getId());
+                });
     }
 
     @Override
@@ -102,7 +107,8 @@ public class ExpenseServiceImpl implements ExpenseService {
                     if (!exists) {
                         return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Expense not found"));
                     }
-                    return expenseRepository.deleteById(id);
+                    return expenseRepository.deleteById(id)
+                            .doOnSuccess(unused -> LoggingUtil.logInfo("Expense deleted with ID: " + id));
                 });
     }
 }
