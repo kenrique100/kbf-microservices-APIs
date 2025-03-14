@@ -50,6 +50,7 @@ services:
       SPRINGDOC_API_DOCS_PATH: "/v3/api-docs"
       SPRINGDOC_SWAGGER_UI_ENABLED: "true"
       SPRINGDOC_SWAGGER_UI_PATH: "/swagger-ui.html"
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: broker:29092
     ports:
       - "9085:8085"
     depends_on:

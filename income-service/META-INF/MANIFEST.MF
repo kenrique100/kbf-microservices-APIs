@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Created-By: Maven Archiver 3.4.0
 Build-Jdk-Spec: 21
 Main-Class: org.springframework.boot.loader.launch.JarLauncher
-Start-Class: com.akentech.shared.models.income.IncomeServiceApplication
+Start-Class: com.akentech.kbf.income.IncomeServiceApplication
 Spring-Boot-Version: 3.4.3
 Spring-Boot-Classes: BOOT-INF/classes/
 Spring-Boot-Lib: BOOT-INF/lib/

@@ -15,6 +15,7 @@
         <module>transaction-service</module>
         <module>api-gateway</module>
         <module>shared-models</module>
+        <module>kafka-utility</module>
 
     </modules>
 
