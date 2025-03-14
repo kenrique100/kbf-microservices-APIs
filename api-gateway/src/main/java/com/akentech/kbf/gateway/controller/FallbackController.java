@@ -1,4 +1,4 @@
-package com.akentech.shared.models.controller;
+package com.akentech.kbf.gateway.controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;

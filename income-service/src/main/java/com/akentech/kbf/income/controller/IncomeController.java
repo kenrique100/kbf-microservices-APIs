@@ -1,7 +1,7 @@
-package com.akentech.shared.models.income.controller;
+package com.akentech.kbf.income.controller;
 
 import com.akentech.shared.models.Income;
-import com.akentech.shared.models.income.service.IncomeService;
+import com.akentech.kbf.income.service.IncomeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

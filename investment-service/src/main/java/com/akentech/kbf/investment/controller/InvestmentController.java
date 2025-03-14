@@ -1,9 +1,9 @@
-package com.akentech.shared.models.investment.controller;
+package com.akentech.kbf.investment.controller;
 
 import com.akentech.shared.models.Investment;
 import com.akentech.shared.models.InvestmentRequest;
 import com.akentech.shared.models.UpdateInvestmentRequest;
-import com.akentech.shared.models.investment.service.InvestmentService;
+import com.akentech.kbf.investment.service.InvestmentService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
