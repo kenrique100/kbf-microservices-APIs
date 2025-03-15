@@ -50,7 +50,6 @@ services:
       SPRINGDOC_API_DOCS_PATH: "/v3/api-docs"
       SPRINGDOC_SWAGGER_UI_ENABLED: "true"
       SPRINGDOC_SWAGGER_UI_PATH: "/swagger-ui.html"
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: broker:29092
     ports:
       - "9085:8085"
     depends_on:
@@ -59,6 +58,91 @@ services:
       - kbf
     restart: unless-stopped
 
+  # Loki (Log Aggregation)
+  loki:
+    image: grafana/loki:2.9.0
+    container_name: loki
+    restart: unless-stopped
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./loki-config.yaml:/etc/loki/config.yaml
+      - loki-data:/loki
+    command: -config.file=/etc/loki/config.yaml
+    networks:
+      - kbf
+
+  # Promtail (Log Shipper for Loki)
+  promtail:
+    image: grafana/promtail:2.9.0
+    container_name: promtail
+    restart: unless-stopped
+    volumes:
+      - /var/log:/var/log
+      - ./promtail-config.yaml:/etc/promtail/config.yaml
+    command: -config.file=/etc/promtail/config.yaml
+    networks:
+      - kbf
+    depends_on:
+      - loki
+
+  # Grafana (Visualization for Loki logs, Prometheus metrics, and Tempo traces)
+  grafana:
+    image: grafana/grafana:10.1.0
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./docker/grafana/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_DISABLE_LOGIN_FORM=true
+    networks:
+      - kbf
+    depends_on:
+      - loki
+      - prometheus
+      - tempo
+
+  # Prometheus (Monitoring)
+  prometheus:
+    image: prom/prometheus:v2.46.0
+    container_name: prometheus
+    restart: unless-stopped
+    command:
+      - --enable-feature=exemplar-storage
+      - --config.file=/etc/prometheus/prometheus.yml
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    networks:
+      - kbf
+
+  # Tempo (Distributed Tracing - Version 2.2.2)
+  tempo:
+    image: grafana/tempo:2.2.2
+    container_name: tempo
+    restart: unless-stopped
+    command: ['-config.file=/etc/tempo.yaml']
+    volumes:
+      - ./docker/tempo/tempo.yml:/etc/tempo.yaml:ro
+      - ./docker/tempo/tempo-data:/tmp/tempo
+    ports:
+      - "3110:3100" # Tempo
+      - "9411:9411" # Zipkin
+    networks:
+      - kbf
+
 networks:
   kbf:
     external: true
+
+volumes:
+  loki-data:
+    driver: local
+  grafana-data:
+    driver: local

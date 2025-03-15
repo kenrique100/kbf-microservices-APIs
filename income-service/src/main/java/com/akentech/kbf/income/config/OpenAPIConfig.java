@@ -1,4 +1,4 @@
-package com.akentech.shared.models.income.config;
+package com.akentech.kbf.income.config;
 
 import io.swagger.v3.oas.models.ExternalDocumentation;
 import io.swagger.v3.oas.models.OpenAPI;

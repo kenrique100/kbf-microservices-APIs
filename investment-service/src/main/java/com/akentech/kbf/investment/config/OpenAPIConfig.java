@@ -1,4 +1,4 @@
-package com.akentech.shared.models.transaction.config;
+package com.akentech.kbf.investment.config;
 
 import io.swagger.v3.oas.models.ExternalDocumentation;
 import io.swagger.v3.oas.models.OpenAPI;
@@ -11,14 +11,14 @@ import org.springframework.context.annotation.Configuration;
 public class OpenAPIConfig {
 
     @Bean
-    public OpenAPI transactionServiceAPI() {
+    public OpenAPI investmentServiceAPI() {
         return new OpenAPI()
-                .info(new Info().title("Transaction Service API")
-                        .description("This is the REST APT for Transaction Service Belonging to KBF Microservice web app")
+                .info(new Info().title("Investment Service API")
+                        .description("This is the REST API for Investment Service Belonging to KBF Microservice web app")
                         .version("v0.0.1")
                         .license(new License().name("Apache 2.8")))
                 .externalDocs(new ExternalDocumentation()
-                        .description("You can refer to the Transaction Service Jira Documentation")
-                        .url("https://Transaction-service-dummy-url.com/docs"));
+                        .description("You can refer to the Investment Service Jira Documentation")
+                        .url("https://Investment-service-dummy-url.com/docs"));
     }
 }
