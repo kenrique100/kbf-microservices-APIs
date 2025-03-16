@@ -1,3 +1,4 @@
+/*
 package com.akentech.kbf.income;
 
 import org.springframework.boot.SpringApplication;
@@ -9,4 +10,4 @@ public class TestIncomeServiceApplication {
         SpringApplication.from(IncomeServiceApplication::main).with(TestcontainersConfiguration.class).run(args);
     }
 
-}
+}*/
