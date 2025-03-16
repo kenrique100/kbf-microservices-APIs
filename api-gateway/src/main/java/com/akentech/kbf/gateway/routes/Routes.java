@@ -46,15 +46,15 @@ public class Routes {
                                             .setFallbackUri("forward:/fallback"));
                         })
                         .uri("http://localhost:8082"))
-                .route("investments-service", r -> r.path("/api/investments/**")
+                .route("investment-service", r -> r.path("/api/investments/**")
                         .filters(f -> f.circuitBreaker(config -> config
                                 .setName("investmentServiceCircuitBreaker")
                                 .setFallbackUri("forward:/fallback")))
                         .uri("http://localhost:8083"))
-                .route("investments-service-swagger", r -> r.path("/aggregate/investments-service/v3/api-docs")
+                .route("investment-service-swagger", r -> r.path("/aggregate/investment-service/v3/api-docs")
                         .filters(f -> {
-                            logger.info("Configuring circuit breaker for investments-service-swagger");
-                            return f.rewritePath("/aggregate/investments-service/v3/api-docs", "/v3/api-docs")
+                            logger.info("Configuring circuit breaker for investment-service-swagger");
+                            return f.rewritePath("/aggregate/investment-service/v3/api-docs", "/v3/api-docs")
                                     .circuitBreaker(config -> config
                                             .setName("investmentServiceCircuitBreaker")
                                             .setFallbackUri("forward:/fallback"));
