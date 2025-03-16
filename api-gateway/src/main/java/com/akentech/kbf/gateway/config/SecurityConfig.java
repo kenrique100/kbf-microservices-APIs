@@ -28,7 +28,7 @@ public class SecurityConfig {
     private final String[] freeResourceUrls = {
             "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**",
             "/swagger-resources/**", "/api-docs/**", "/aggregate/**",
-            "/webjars/**", "/favicon.ico", "/actuator/health"
+            "/webjars/**", "/favicon.ico", "/actuator/health", "actuator/prometheus"
     };
 
     @Bean
