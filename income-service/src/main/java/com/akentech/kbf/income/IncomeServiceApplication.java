@@ -5,7 +5,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
 
 @SpringBootApplication
-@ComponentScan(basePackages = "com.akentech.kbf")public class IncomeServiceApplication {
+@ComponentScan(basePackages = "com.akentech.kbf")
+public class IncomeServiceApplication {
     public static void main(String[] args) {
         SpringApplication.run(IncomeServiceApplication.class, args);
     }

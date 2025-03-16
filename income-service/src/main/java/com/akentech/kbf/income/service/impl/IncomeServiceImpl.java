@@ -74,9 +74,10 @@ public class IncomeServiceImpl implements IncomeService {
     public Mono<Income> createIncome(Income income) {
         LoggingUtil.logInfo("Creating new income: " + income.getReason());
         income.calculateDueBalance();
-        income.setCreatedAt(LocalDateTime.now());
+        //income.setCreatedAt(LocalDateTime.now());
         return incomeRepository.save(income)
                 .doOnSuccess(savedIncome -> {
+                    // Publish the income data to Kafka
                     KafkaTemplate.send("income-topic", savedIncome);
                     LoggingUtil.logInfo("Income event published: " + savedIncome.getId());
                 });
