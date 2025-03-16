@@ -15,11 +15,11 @@ import org.bson.types.ObjectId;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Service // Marks this class as a Spring service component
-@RequiredArgsConstructor // Lombok annotation to generate a constructor with required fields (dependencies)
+@Service
+@RequiredArgsConstructor
 public class IncomeServiceImpl implements IncomeService {
 
-    private final IncomeRepository incomeRepository; // Repository for database operations
+    private final IncomeRepository incomeRepository;
     private final KafkaTemplate<String, Object> KafkaTemplate; // Kafka template for publishing events
 
     /**
@@ -29,8 +29,8 @@ public class IncomeServiceImpl implements IncomeService {
      */
     @Override
     public Flux<Income> getAllIncomes() {
-        LoggingUtil.logInfo("Fetching all incomes"); // Log the operation
-        return incomeRepository.findAll(); // Retrieve all incomes from the repository
+        LoggingUtil.logInfo("Fetching all incomes");
+        return incomeRepository.findAll();
     }
 
     /**
@@ -50,17 +50,17 @@ public class IncomeServiceImpl implements IncomeService {
             return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid ID format"));
         }
 
-        LoggingUtil.logInfo("Fetching income by ID: " + id); // Log the operation
+        LoggingUtil.logInfo("Fetching income by ID: " + id);
 
         return incomeRepository.findById(id)
                 .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Income not found with id: " + id)))
                 .map(income -> {
-                    income.calculateDueBalance(); // Ensure dueBalance is calculated before returning
+                    income.calculateDueBalance();
                     return income;
                 })
                 .onErrorResume(e -> {
                     LoggingUtil.logError("Error fetching income by ID: " + id + ", Error: " + e.getMessage());
-                    return Mono.error(e); // Propagate the error
+                    return Mono.error(e);
                 });
     }
 
@@ -72,13 +72,13 @@ public class IncomeServiceImpl implements IncomeService {
      */
     @Override
     public Mono<Income> createIncome(Income income) {
-        LoggingUtil.logInfo("Creating new income: " + income.getReason()); // Log the operation
-        income.calculateDueBalance(); // Calculate due balance before saving
-        income.setCreatedAt(LocalDateTime.now()); // Set the creation timestamp to the current date and time
-        return incomeRepository.save(income) // Save the income record to the database
+        LoggingUtil.logInfo("Creating new income: " + income.getReason());
+        income.calculateDueBalance();
+        income.setCreatedAt(LocalDateTime.now());
+        return incomeRepository.save(income)
                 .doOnSuccess(savedIncome -> {
-                    KafkaTemplate.send("income-topic", savedIncome); // Publish the income event to Kafka
-                    LoggingUtil.logInfo("Income event published: " + savedIncome.getId()); // Log the event publication
+                    KafkaTemplate.send("income-topic", savedIncome);
+                    LoggingUtil.logInfo("Income event published: " + savedIncome.getId());
                 });
     }
 
@@ -105,7 +105,7 @@ public class IncomeServiceImpl implements IncomeService {
             return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Amount received must be positive"));
         }
 
-        LoggingUtil.logInfo("Updating income with ID: " + id); // Log the operation
+        LoggingUtil.logInfo("Updating income with ID: " + id);
 
         return incomeRepository.findById(id)
                 .flatMap(existingIncome -> {
@@ -140,8 +140,8 @@ public class IncomeServiceImpl implements IncomeService {
                     if (!exists) {
                         return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Income not found"));
                     }
-                    return incomeRepository.deleteById(id) // Delete the income record
-                            .doOnSuccess(unused -> LoggingUtil.logInfo("Income deleted with ID: " + id)); // Log the deletion
+                    return incomeRepository.deleteById(id)
+                            .doOnSuccess(unused -> LoggingUtil.logInfo("Income deleted with ID: " + id));
                 });
     }
 }
