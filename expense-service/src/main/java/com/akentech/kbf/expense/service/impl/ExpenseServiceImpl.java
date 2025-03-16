@@ -13,27 +13,39 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import org.bson.types.ObjectId;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
 public class ExpenseServiceImpl implements ExpenseService {
 
     private final ExpenseRepository expenseRepository;
-    private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final KafkaTemplate<String, Object> kafkaTemplate; // Kafka template for publishing events
 
+    /**
+     * Fetches all expense records from the database.
+     *
+     * @return A Flux of Expense objects representing all expenses.
+     */
     @Override
     public Flux<Expense> getAllExpenses() {
         LoggingUtil.logInfo("Fetching all expenses");
         return expenseRepository.findAll();
     }
 
+    /**
+     * Fetches a single expense record by its ID.
+     *
+     * @param id The ID of the expense record to fetch.
+     * @return A Mono of Expense if found, or an error if the ID is invalid or the record is not found.
+     */
     @Override
     public Mono<Expense> getExpenseById(String id) {
         if (id == null || id.isBlank()) {
             return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID cannot be null or empty"));
         }
 
-        // Validate ObjectId format
+        // Validate that the ID is in a valid MongoDB ObjectId format
         if (!ObjectId.isValid(id)) {
             return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid ID format"));
         }
@@ -43,38 +55,52 @@ public class ExpenseServiceImpl implements ExpenseService {
         return expenseRepository.findById(id)
                 .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Expense not found with id: " + id)))
                 .map(expense -> {
-                    expense.calculateDueBalance(); // Ensure dueBalance is set
+                    expense.calculateDueBalance(); // Ensure dueBalance is calculated before returning
                     return expense;
                 })
                 .onErrorResume(e -> {
                     LoggingUtil.logError("Error fetching expense by ID: " + id + ", Error: " + e.getMessage());
-                    return Mono.error(e);
+                    return Mono.error(e); // Propagate the error
                 });
     }
 
+    /**
+     * Creates a new expense record and sets the creation timestamp.
+     *
+     * @param expense The expense object to be created.
+     * @return A Mono of the saved Expense object with the creation timestamp.
+     */
     @Override
     public Mono<Expense> createExpense(Expense expense) {
         LoggingUtil.logInfo("Creating new expense: " + expense.getReason());
         expense.calculateDueBalance();
+        expense.setCreatedAt(LocalDateTime.now()); // Set the creation timestamp to the current date and time
         return expenseRepository.save(expense)
                 .doOnSuccess(savedExpense -> {
-                    kafkaTemplate.send("expense-topic", savedExpense);
+                    kafkaTemplate.send("expense-topic", savedExpense); // Publish the expense event to Kafka
                     LoggingUtil.logInfo("Expense event published: " + savedExpense.getId());
                 });
     }
 
+    /**
+     * Updates an existing expense record by its ID.
+     *
+     * @param id The ID of the expense record to update.
+     * @param expense The updated expense object.
+     * @return A Mono of the updated Expense object, or an error if the ID is invalid or the record is not found.
+     */
     @Override
     public Mono<Expense> updateExpense(String id, Expense expense) {
         if (id == null || id.isBlank()) {
             return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID cannot be null or empty"));
         }
 
-        // Validate ObjectId format
+        // Validate that the ID is in a valid MongoDB ObjectId format
         if (!ObjectId.isValid(id)) {
             return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid ID format"));
         }
 
-        // Validate expense fields
+        // Validate that the amount paid is positive
         if (expense.getAmountPaid() == null || expense.getAmountPaid().compareTo(BigDecimal.ZERO) < 0) {
             return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Amount paid must be positive"));
         }
@@ -83,6 +109,7 @@ public class ExpenseServiceImpl implements ExpenseService {
 
         return expenseRepository.findById(id)
                 .flatMap(existingExpense -> {
+                    // Update the existing expense record with new values
                     existingExpense.setReason(expense.getReason());
                     existingExpense.setExpenseDate(expense.getExpenseDate());
                     existingExpense.setQtyPurchased(expense.getQtyPurchased());
@@ -91,14 +118,20 @@ public class ExpenseServiceImpl implements ExpenseService {
                     existingExpense.calculateDueBalance(); // Recalculate due balance
                     existingExpense.setReceipt(expense.getReceipt());
                     existingExpense.setCreatedBy(expense.getCreatedBy());
-                    return expenseRepository.save(existingExpense);
+                    return expenseRepository.save(existingExpense); // Save the updated record
                 })
                 .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Expense not found with id: " + id)));
     }
 
+    /**
+     * Deletes an expense record by its ID.
+     *
+     * @param id The ID of the expense record to delete.
+     * @return A Mono of Void, or an error if the ID is invalid or the record is not found.
+     */
     @Override
     public Mono<Void> deleteExpense(String id) {
-        if (!ObjectId.isValid(id)) { // Validate MongoDB ObjectId format
+        if (!ObjectId.isValid(id)) { // Validate that the ID is in a valid MongoDB ObjectId format
             return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid ID format"));
         }
 
