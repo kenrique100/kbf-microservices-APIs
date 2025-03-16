@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Document(value = "expense")
 @AllArgsConstructor
@@ -46,6 +47,8 @@ public class Expense {
 
     @NotBlank(message = "CreatedBy is mandatory")
     private String createdBy;
+
+    private LocalDateTime createdAt;
 
     public void calculateDueBalance() {
         if (this.expectedAmount != null && this.amountPaid != null) {
