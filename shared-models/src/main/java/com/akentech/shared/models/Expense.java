@@ -48,7 +48,7 @@ public class Expense {
     @NotBlank(message = "CreatedBy is mandatory")
     private String createdBy;
 
-    private LocalDateTime createdAt;
+    /*private LocalDateTime createdAt;*/
 
     public void calculateDueBalance() {
         if (this.expectedAmount != null && this.amountPaid != null) {

@@ -13,7 +13,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import org.bson.types.ObjectId;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -21,6 +20,7 @@ public class ExpenseServiceImpl implements ExpenseService {
 
     private final ExpenseRepository expenseRepository;
     private final KafkaTemplate<String, Object> kafkaTemplate; // Kafka template for publishing events
+
 
     /**
      * Fetches all expense records from the database.
@@ -67,17 +67,17 @@ public class ExpenseServiceImpl implements ExpenseService {
     /**
      * Creates a new expense record and sets the creation timestamp.
      *
-     * @param expense The expense object to be created.
-     * @return A Mono of the saved Expense object with the creation timestamp.
+     * @param expense The income object to be created.
+     * @return A Mono of the saved expense object with the creation timestamp.
      */
     @Override
     public Mono<Expense> createExpense(Expense expense) {
         LoggingUtil.logInfo("Creating new expense: " + expense.getReason());
         expense.calculateDueBalance();
-        expense.setCreatedAt(LocalDateTime.now()); // Set the creation timestamp to the current date and time
         return expenseRepository.save(expense)
                 .doOnSuccess(savedExpense -> {
-                    kafkaTemplate.send("expense-topic", savedExpense); // Publish the expense event to Kafka
+                    // Use instance of kafkaTemplate to send messages
+                    kafkaTemplate.send("expense-topic", savedExpense);
                     LoggingUtil.logInfo("Expense event published: " + savedExpense.getId());
                 });
     }
