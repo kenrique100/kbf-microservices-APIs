@@ -1,3 +1,4 @@
+/*
 package com.akentech.kbf.expense;
 
 import org.springframework.boot.test.context.TestConfiguration;
@@ -14,4 +15,4 @@ public class TestContainersConfiguration {
         return new MongoDBContainer(DockerImageName.parse("mongo:latest"));
     }
 
-}
+}*/

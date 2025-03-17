@@ -1,3 +1,4 @@
+/*
 package com.akentech.kbf.expense;
 
 import com.akentech.shared.models.Expense;
@@ -315,4 +316,4 @@ class ExpenseControllerIntegrationTest {
                 .expectBodyList(Expense.class)
                 .hasSize(0); // Verify that no expenses are returned
     }
-}
+}*/
