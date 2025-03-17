@@ -3,8 +3,8 @@ package com.akentech.kbf.expense.controller;
 import com.akentech.kbf.expense.utils.PartInputStream;
 import com.akentech.kbf.expense.service.ExcelReaderService;
 import com.akentech.kbf.expense.service.ExpenseService;
+import com.akentech.shared.models.Expense;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.codec.multipart.FilePart;
@@ -15,74 +15,63 @@ import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 import java.util.Objects;
 
+/**
+ * Controller responsible for handling expense file uploads and processing.
+ */
 @RestController
 @RequestMapping("/api/expenses")
 @RequiredArgsConstructor
-@Slf4j
 public class ExpenseExcelController {
 
     private final ExcelReaderService excelReaderService;
     private final ExpenseService expenseService;
 
     /**
-     * Uploads an Excel file and processes the expense data asynchronously.
+     * Handles the upload and processing of an Excel file containing expense data.
      *
-     * @param filePart The Excel file to upload as a Part.
-     * @return A Mono<String> indicating success or failure.
+     * @param filePart The uploaded Excel file.
+     * @return A Mono<String> indicating the success or failure of processing.
      */
     @PostMapping(value = "/upload", consumes = "multipart/form-data")
     @ResponseStatus(HttpStatus.CREATED)
     public Mono<String> uploadExpenseData(@RequestPart("file") FilePart filePart) {
-        log.info("Received file upload request: {}", filePart.filename());
 
-        // Validate if the file is empty
+        // Check if the uploaded file is empty
         if (filePart.headers().getContentLength() == 0) {
-            log.error("File is empty");
             return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "File is empty"));
         }
 
-        // Validate file type (e.g., ensure it's an Excel file)
-        if (filePart.headers().getContentType() == null || !Objects.equals(filePart.headers().getContentType().toString(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")) {
-            log.error("Invalid file type: {}", filePart.headers().getContentType());
+        // Validate file type (Only allow Excel files)
+        if (!Objects.equals(filePart.headers().getContentType().toString(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")) {
             return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid file type. Only Excel files are allowed."));
         }
 
+        // Process the file asynchronously
         return filePart.content()
-                .collectList()
+                .collectList()  // Collect all file content into a list of data buffers
                 .flatMap(dataBuffers -> {
                     try (InputStream inputStream = new PartInputStream(dataBuffers)) {
-                        log.info("Processing file: {}", filePart.filename());
-                        return Mono.just(excelReaderService.readExpenseDataFromExcel(inputStream)); // Wrap in Mono.just
+
+                        // Read expenses from Excel file
+                        List<Expense> expenses = excelReaderService.readExpenseDataFromExcel(inputStream);
+
+                        // Process expenses sequentially and save them to the database
+                        return Flux.fromIterable(expenses)
+                                .concatMap(expenseService::createExpense)  // Ensures ordered, one-by-one processing
+                                .collectList()  // Collect all saved expenses into a list
+                                .map(savedExpenses -> "Successfully processed " + savedExpenses.size() + " records.");
+
                     } catch (IOException e) {
-                        log.error("Failed to read file: {}", e.getMessage());
                         return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Failed to read file: " + e.getMessage()));
                     }
                 })
-                .flatMapMany(Flux::fromIterable) // Convert List<Expense> to Flux<Expense>
-                .flatMap(expenseService::createExpense) // Save each expense record asynchronously
-                .collectList() // Collect all saved records
-                .map(savedList -> {
-                    log.info("Successfully processed {} expense records from file: {}", savedList.size(), filePart.filename());
-                    return "Successfully processed " + savedList.size() + " expense records.";
-                })
-                .doOnError(error -> {
-                    log.error("Failed to process Excel file: {}", error.getMessage());
-                    if (error instanceof IOException) {
-                        log.error("File reading error: {}", error.getMessage());
-                    } else if (error instanceof RuntimeException) {
-                        log.error("Processing error: {}", error.getMessage());
-                    }
-                })
-                .onErrorResume(e -> {
-                    if (e instanceof IOException) {
-                        return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "File reading error: " + e.getMessage()));
-                    } else if (e instanceof InvalidFormatException) {
-                        return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid Excel file format: " + e.getMessage()));
-                    } else {
-                        return Mono.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to process file: " + e.getMessage()));
-                    }
-                });
+                // Handle any unexpected errors
+                .onErrorResume(e -> Mono.error(new ResponseStatusException(
+                        e instanceof IOException ? HttpStatus.BAD_REQUEST :
+                                e instanceof InvalidFormatException ? HttpStatus.BAD_REQUEST : HttpStatus.INTERNAL_SERVER_ERROR,
+                        e.getMessage())));
     }
 }

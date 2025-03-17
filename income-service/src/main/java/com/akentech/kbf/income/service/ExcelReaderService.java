@@ -4,7 +4,6 @@ import com.akentech.kbf.income.util.ExcelUtil;
 import com.akentech.shared.models.Income;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -16,11 +15,6 @@ import java.util.List;
 @Service
 public class ExcelReaderService {
 
-    private final KafkaTemplate<String, Object> kafkaTemplate;
-
-    public ExcelReaderService(KafkaTemplate<String, Object> kafkaTemplate) {
-        this.kafkaTemplate = kafkaTemplate;
-    }
 
     public List<Income> readIncomeDataFromExcel(InputStream inputStream) {
         List<Income> incomeList = new ArrayList<>();
@@ -48,7 +42,6 @@ public class ExcelReaderService {
                 income.setCreatedBy(ExcelUtil.getCellValueAsString(row.getCell(6)));
 
                 incomeList.add(income);
-                kafkaTemplate.send("income-topic", income);
             }
         } catch (IOException e) {
             throw new RuntimeException("Failed to read Excel file", e);
