@@ -12,6 +12,8 @@ import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.time.LocalDate;
+
 /**
  * Implementation of the IncomeService interface.
  */
@@ -83,7 +85,7 @@ public class IncomeServiceImpl implements IncomeService {
         return incomeRepository.findById(id)
                 .flatMap(existingIncome -> {
                     existingIncome.setReason(income.getReason());
-                    existingIncome.setIncomeDate(income.getIncomeDate());
+                    existingIncome.setIncomeDate(LocalDate.parse(String.valueOf(income.getIncomeDate())));
                     existingIncome.setQuantity(income.getQuantity());
                     existingIncome.setAmountReceived(income.getAmountReceived());
                     existingIncome.setExpectedAmount(income.getExpectedAmount());

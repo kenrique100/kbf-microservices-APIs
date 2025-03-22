@@ -1,13 +1,12 @@
+/*
 package com.akentech.kbf.income.controller;
 
-
-import com.akentech.kbf.income.service.ExcelReaderService;
 import com.akentech.kbf.income.service.IncomeService;
-import com.akentech.kbf.income.util.PartInputStream;
+import com.akentech.kbf.income.utils.PartInputStream;
+import com.akentech.kbf.income.utils.ValidationUtils;
 import com.akentech.shared.models.Income;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.web.bind.annotation.*;
@@ -17,6 +16,7 @@ import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Objects;
 
@@ -26,28 +26,18 @@ import java.util.Objects;
 @Slf4j
 public class IncomeExcelController {
 
-    private final ExcelReaderService excelReaderService;
     private final IncomeService incomeService;
-
-    /**
-     * Uploads an Excel file and processes the income data asynchronously.
-     *
-     * @param filePart The Excel file to upload as a Part.
-     * @return A Mono<String> indicating success or failure.
-     */
 
     @PostMapping(value = "/upload", consumes = "multipart/form-data")
     @ResponseStatus(HttpStatus.CREATED)
     public Mono<String> uploadIncomeData(@RequestPart("file") FilePart filePart) {
         log.info("Received file upload request: {}", filePart.filename());
 
-        // Validate if the file is empty
         if (filePart.headers().getContentLength() == 0) {
             log.error("File is empty");
             return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "File is empty"));
         }
 
-        // Validate file type
         if (filePart.headers().getContentType() == null ||
                 !Objects.equals(filePart.headers().getContentType().toString(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")) {
             log.error("Invalid file type: {}", filePart.headers().getContentType());
@@ -58,11 +48,20 @@ public class IncomeExcelController {
                 .collectList()
                 .flatMap(dataBuffers -> {
                     try (InputStream inputStream = new PartInputStream(dataBuffers)) {
-                        List<Income> incomes = excelReaderService.readIncomeDataFromExcel(inputStream);
+                        List<Income> incomes = ValidationUtils.validateAndReadIncomeDataFromExcel(inputStream);
                         log.info("Read {} income records from file", incomes.size());
 
                         return Flux.fromIterable(incomes)
-                                .concatMap(incomeService::createIncome)  // Ensures ordered, one-by-one processing
+                                .concatMap(income -> {
+                                    try {
+                                        // Validate the income object before saving
+                                        ValidationUtils.validateIncome(income);
+                                        return incomeService.createIncome(income);
+                                    } catch (ResponseStatusException e) {
+                                        log.error("Validation error for income record: {}", e.getMessage());
+                                        return Mono.error(e);
+                                    }
+                                })
                                 .collectList()
                                 .map(savedIncomes -> {
                                     log.info("Successfully processed {} income records.", savedIncomes.size());
@@ -72,17 +71,15 @@ public class IncomeExcelController {
                     } catch (IOException e) {
                         log.error("Failed to read file: {}", e.getMessage());
                         return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Failed to read file: " + e.getMessage()));
-                    }
-                })
-                .doOnError(error -> log.error("Failed to process Excel file: {}", error.getMessage()))
-                .onErrorResume(e -> {
-                    if (e instanceof IOException) {
-                        return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "File reading error: " + e.getMessage()));
-                    } else if (e instanceof InvalidFormatException) {
-                        return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid Excel file format: " + e.getMessage()));
-                    } else {
+                    } catch (DateTimeParseException e) {
+                        log.error("Invalid date format in Excel file: {}", e.getMessage());
+                        return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid date format in Excel file. Expected format: yyyy-MM-dd"));
+                    } catch (Exception e) {
+                        log.error("Failed to process Excel file: {}", e.getMessage());
                         return Mono.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to process file: " + e.getMessage()));
                     }
-                });
+                })
+                .doOnError(error -> log.error("Failed to process Excel file: {}", error.getMessage()));
     }
 }
+*/

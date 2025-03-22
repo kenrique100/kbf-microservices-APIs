@@ -10,7 +10,6 @@ import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Document(value = "income")
 @AllArgsConstructor
@@ -40,13 +39,11 @@ public class Income {
     @PositiveOrZero(message = "Due balance must be positive or zero")
     private BigDecimal dueBalance;
 
+    @NotBlank(message = "Receipt is mandatory")
     private String receipt;
 
     @NotBlank(message = "CreatedBy is mandatory")
     private String createdBy;
-
-    /*@Setter
-    private LocalDateTime createdAt;*/
 
     public void calculateDueBalance() {
         if (this.expectedAmount != null && this.amountReceived != null) {
