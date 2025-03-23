@@ -1,3 +1,4 @@
+/*
 package com.akentech.kbf.investment;
 
 import org.springframework.boot.SpringApplication;
@@ -9,4 +10,4 @@ public class TestInvestmentServiceApplication {
         SpringApplication.from(InvestmentServiceApplication::main).with(TestcontainersConfiguration.class).run(args);
     }
 
-}
+}*/

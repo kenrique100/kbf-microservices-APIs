@@ -23,11 +23,6 @@ public class ValidationUtils {
             throw new InvalidRequestException("CreatedBy cannot be null or empty");
         }
     }
-    public static void validateInvestmentId(Long id) {
-        if (id == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid ID format");
-        }
-    }
 
     public static void validateAmount(BigDecimal amount) {
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
