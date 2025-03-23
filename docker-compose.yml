@@ -133,3 +133,5 @@ volumes:
   #  driver: local
   kafka-data:
     driver: local
+  postgres_data:
+    driver: local
