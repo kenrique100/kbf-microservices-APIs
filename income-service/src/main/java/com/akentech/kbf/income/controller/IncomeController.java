@@ -26,7 +26,7 @@ public class IncomeController {
     }
 
     @GetMapping("/{id}")
-    public Mono<Income> getIncomeById(@PathVariable String id) {
+    public Mono<Income> getIncomeById(@PathVariable Long id) {
         ValidationUtils.validateIncomeId(id);
         return incomeService.getIncomeById(id)
                 .switchIfEmpty(Mono.error(() -> new IncomeNotFoundException("Income not found with ID: " + id)))
@@ -42,7 +42,7 @@ public class IncomeController {
     }
 
     @PutMapping("/{id}")
-    public Mono<Income> updateIncome(@PathVariable String id, @RequestBody @Valid Income income) {
+    public Mono<Income> updateIncome(@PathVariable Long id, @RequestBody @Valid Income income) {
         ValidationUtils.validateIncomeId(id);
         ValidationUtils.validateIncome(income);
         return incomeService.updateIncome(id, income)
@@ -52,7 +52,7 @@ public class IncomeController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public Mono<Void> deleteIncome(@PathVariable String id) {
+    public Mono<Void> deleteIncome(@PathVariable Long id) {
         ValidationUtils.validateIncomeId(id);
         return incomeService.deleteIncome(id)
                 .switchIfEmpty(Mono.error(() -> new IncomeNotFoundException("Income not found with ID: " + id)))

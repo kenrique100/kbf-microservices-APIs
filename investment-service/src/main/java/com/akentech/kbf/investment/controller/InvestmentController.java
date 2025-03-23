@@ -1,11 +1,10 @@
 package com.akentech.kbf.investment.controller;
 
+import com.akentech.kbf.investment.service.InvestmentService;
 import com.akentech.shared.models.Investment;
 import com.akentech.shared.models.InvestmentRequest;
 import com.akentech.shared.models.UpdateInvestmentRequest;
-import com.akentech.kbf.investment.service.InvestmentService;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -29,7 +28,7 @@ public class InvestmentController {
     }
 
     @GetMapping("/{id}")
-    public Mono<ResponseEntity<Investment>> getInvestmentById(@PathVariable @NotBlank(message = "ID cannot be blank") String id) {
+    public Mono<ResponseEntity<Investment>> getInvestmentById(@PathVariable Long id) {
         return investmentService.getInvestmentById(id)
                 .map(ResponseEntity::ok)
                 .defaultIfEmpty(ResponseEntity.notFound().build());
@@ -37,17 +36,12 @@ public class InvestmentController {
 
     @GetMapping
     public ResponseEntity<Flux<Investment>> getAllInvestments() {
-        /* try {
-            Thread.sleep(5000);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }*/
         return ResponseEntity.ok(investmentService.getAllInvestments());
     }
 
     @PutMapping("/{id}")
     public Mono<ResponseEntity<Investment>> updateInvestment(
-            @PathVariable @NotBlank(message = "ID cannot be blank") String id,
+            @PathVariable Long id,
             @RequestBody @Valid UpdateInvestmentRequest request) {
         return investmentService.updateInvestment(id, request.getNewAmount())
                 .map(ResponseEntity::ok)
@@ -55,25 +49,23 @@ public class InvestmentController {
     }
 
     @DeleteMapping("/{id}")
-    public Mono<ResponseEntity<Void>> deleteInvestment(@PathVariable @NotBlank(message = "ID cannot be blank") String id) {
+    public Mono<ResponseEntity<Void>> deleteInvestment(@PathVariable Long id) {
         return investmentService.deleteInvestment(id)
                 .then(Mono.just(ResponseEntity.noContent().build()));
     }
 
-
     @PatchMapping("/{id}/deduct")
     public Mono<ResponseEntity<Investment>> deductFromInvestment(
-            @PathVariable @NotBlank(message = "ID cannot be blank") String id,
+            @PathVariable Long id,
             @RequestBody @Valid UpdateInvestmentRequest request) {
         return investmentService.deductFromInvestment(id, request.getNewAmount())
                 .map(ResponseEntity::ok)
                 .defaultIfEmpty(ResponseEntity.notFound().build());
     }
 
-
     @PatchMapping("/{id}/add")
     public Mono<ResponseEntity<Investment>> addToInvestment(
-            @PathVariable @NotBlank(message = "ID cannot be blank") String id,
+            @PathVariable Long id,
             @RequestBody @Valid UpdateInvestmentRequest request) {
         return investmentService.addToInvestment(id, request.getNewAmount())
                 .map(ResponseEntity::ok)
