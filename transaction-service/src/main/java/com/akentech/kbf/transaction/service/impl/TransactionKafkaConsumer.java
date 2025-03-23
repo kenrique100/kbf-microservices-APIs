@@ -45,7 +45,7 @@ public class TransactionKafkaConsumer {
     @KafkaListener(topics = "investment-topic", groupId = "transaction-group")
     public void consumeInvestment(Investment investment) {
         try {
-            Transaction transaction = new Transaction("INVESTMENT", investment.getId(), LocalDate.now(), investment.getCurrentBalance(), investment.getCreatedBy());
+            Transaction transaction = new Transaction("INVESTMENT", investment.getId().toString(), LocalDate.now(), investment.getCurrentBalance(), investment.getCreatedBy());
             transactionRepository.save(transaction).subscribe();
             LoggingUtil.logInfo("Investment transaction saved: " + investment.getId());
         } catch (Exception e) {
