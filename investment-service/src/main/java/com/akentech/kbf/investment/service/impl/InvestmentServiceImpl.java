@@ -4,8 +4,7 @@ import com.akentech.kbf.investment.exception.InsufficientBalanceException;
 import com.akentech.kbf.investment.exception.InvalidRequestException;
 import com.akentech.kbf.investment.repository.InvestmentRepository;
 import com.akentech.kbf.investment.service.InvestmentService;
-import com.akentech.kbf.investment.utils.ValidationUtil;
-import com.akentech.kbf.kafka.utils.LoggingUtil;
+import com.akentech.kbf.investment.utils.ValidationUtils;
 import com.akentech.shared.models.Investment;
 import lombok.RequiredArgsConstructor;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -25,12 +24,8 @@ public class InvestmentServiceImpl implements InvestmentService {
 
     @Override
     public Mono<Investment> createInvestment(BigDecimal initialAmount, String createdBy) {
-        if (initialAmount == null || initialAmount.compareTo(BigDecimal.ZERO) <= 0) {
-            return Mono.error(new InvalidRequestException("Initial amount must be greater than zero"));
-        }
-        if (createdBy == null || createdBy.isBlank()) {
-            return Mono.error(new InvalidRequestException("CreatedBy cannot be null or empty"));
-        }
+        ValidationUtils.validateInitialAmount(initialAmount);
+        ValidationUtils.validateCreatedBy(createdBy);
 
         Investment investment = Investment.builder()
                 .initialAmount(initialAmount)
@@ -41,16 +36,12 @@ public class InvestmentServiceImpl implements InvestmentService {
                 .build();
 
         return investmentRepository.save(investment)
-                .doOnSuccess(savedInvestment -> {
-                    kafkaTemplate.send("investment-topic", savedInvestment);
-                    LoggingUtil.logInfo("Investment event published: " + savedInvestment.getId());
-                });
+                .doOnSuccess(savedInvestment -> kafkaTemplate.send("investment-topic", savedInvestment.getId().toString(), savedInvestment));
     }
 
     @Override
-    public Mono<Investment> getInvestmentById(String id) {
-        return ValidationUtil.validateId(id)
-                .flatMap(investmentRepository::findById)
+    public Mono<Investment> getInvestmentById(Long id) {
+        return investmentRepository.findById(id)
                 .switchIfEmpty(Mono.error(new InvalidRequestException("Investment not found with ID: " + id)));
     }
 
@@ -60,13 +51,10 @@ public class InvestmentServiceImpl implements InvestmentService {
     }
 
     @Override
-    public Mono<Investment> updateInvestment(String id, BigDecimal newAmount) {
-        if (newAmount == null || newAmount.compareTo(BigDecimal.ZERO) <= 0) {
-            return Mono.error(new InvalidRequestException("New amount must be greater than zero"));
-        }
+    public Mono<Investment> updateInvestment(Long id, BigDecimal newAmount) {
+        ValidationUtils.validateAmount(newAmount);
 
-        return ValidationUtil.validateId(id)
-                .flatMap(investmentRepository::findById)
+        return investmentRepository.findById(id)
                 .switchIfEmpty(Mono.error(new InvalidRequestException("Investment not found with ID: " + id)))
                 .flatMap(investment -> {
                     BigDecimal balanceDifference = newAmount.subtract(investment.getInitialAmount());
@@ -78,18 +66,18 @@ public class InvestmentServiceImpl implements InvestmentService {
     }
 
     @Override
-    public Mono<Void> deleteInvestment(String id) {
-        return ValidationUtil.validateId(id)
-                .flatMap(investmentRepository::findById)
-                .switchIfEmpty(Mono.error(new InvalidRequestException("Investment not found with ID: " + id)))
-                .flatMap(existingInvestment -> investmentRepository.deleteById(id))
-                .doOnSuccess(unused -> LoggingUtil.logInfo("Investment deleted with ID: " + id));
+    public Mono<Void> deleteInvestment(Long id) {
+        return investmentRepository.existsById(id)
+                .flatMap(exists -> exists
+                        ? investmentRepository.deleteById(id)
+                        : Mono.error(new InvalidRequestException("Investment not found with ID: " + id)));
     }
 
     @Override
-    public Mono<Investment> deductFromInvestment(String id, BigDecimal amount) {
-        return ValidationUtil.validateIdAndAmount(id, amount)
-                .flatMap(investmentRepository::findById)
+    public Mono<Investment> deductFromInvestment(Long id, BigDecimal amount) {
+        ValidationUtils.validateAmount(amount);
+
+        return investmentRepository.findById(id)
                 .switchIfEmpty(Mono.error(new InvalidRequestException("Investment not found with ID: " + id)))
                 .flatMap(investment -> {
                     if (investment.getCurrentBalance().compareTo(amount) < 0) {
@@ -102,9 +90,10 @@ public class InvestmentServiceImpl implements InvestmentService {
     }
 
     @Override
-    public Mono<Investment> addToInvestment(String id, BigDecimal amount) {
-        return ValidationUtil.validateIdAndAmount(id, amount)
-                .flatMap(investmentRepository::findById)
+    public Mono<Investment> addToInvestment(Long id, BigDecimal amount) {
+        ValidationUtils.validateAmount(amount);
+
+        return investmentRepository.findById(id)
                 .switchIfEmpty(Mono.error(new InvalidRequestException("Investment not found with ID: " + id)))
                 .flatMap(investment -> {
                     investment.setCurrentBalance(investment.getCurrentBalance().add(amount));

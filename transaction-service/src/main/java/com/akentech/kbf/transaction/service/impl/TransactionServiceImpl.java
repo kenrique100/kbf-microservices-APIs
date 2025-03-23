@@ -5,6 +5,7 @@ import com.akentech.kbf.transaction.model.Transaction;
 import com.akentech.kbf.transaction.model.dto.DashboardReportDTO;
 import com.akentech.kbf.transaction.repository.TransactionRepository;
 import com.akentech.kbf.transaction.service.TransactionService;
+import com.akentech.kbf.transaction.utils.ValidationUtils;
 import com.akentech.shared.models.Expense;
 import com.akentech.shared.models.Income;
 import com.akentech.shared.models.Investment;
@@ -18,6 +19,7 @@ import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -31,11 +33,14 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Override
     public Mono<DashboardReportDTO> getDashboardData(int range) {
+        ValidationUtils.validateRange(range);
+
         return Flux.merge(
                         incomeWebClient.get()
                                 .uri("/api/incomes")
                                 .retrieve()
                                 .bodyToFlux(Income.class)
+                                .doOnNext(income -> log.info("Fetched income: {}", income.getId()))
                                 .onErrorResume(e -> {
                                     log.error("Error fetching incomes: {}", e.getMessage());
                                     return Flux.empty();
@@ -46,6 +51,7 @@ public class TransactionServiceImpl implements TransactionService {
                                 .uri("/api/expenses")
                                 .retrieve()
                                 .bodyToFlux(Expense.class)
+                                .doOnNext(expense -> log.info("Fetched expense: {}", expense.getId()))
                                 .onErrorResume(e -> {
                                     log.error("Error fetching expenses: {}", e.getMessage());
                                     return Flux.empty();
@@ -56,23 +62,30 @@ public class TransactionServiceImpl implements TransactionService {
                                 .uri("/api/investments")
                                 .retrieve()
                                 .bodyToFlux(Investment.class)
+                                .doOnNext(investment -> log.info("Fetched investment: {}", investment.getId()))
                                 .onErrorResume(e -> {
                                     log.error("Error fetching investments: {}", e.getMessage());
                                     return Flux.empty();
                                 })
-                                .map(investment -> new Transaction("INVESTMENT", investment.getId(), LocalDate.now(), investment.getCurrentBalance(), investment.getCreatedBy()))
+                                .map(investment -> new Transaction("INVESTMENT", investment.getId().toString(), LocalDate.now(), investment.getCurrentBalance(), investment.getCreatedBy()))
                 )
                 .collectList()
                 .flatMap(transactions -> {
                     if (transactions.isEmpty()) {
                         log.warn("No transactions found for the given range: {}", range);
-                        return Mono.error(new TransactionException("No transactions found", HttpStatus.NOT_FOUND));
+                        return Mono.just(new DashboardReportDTO(
+                                List.of(),
+                                BigDecimal.ZERO,
+                                BigDecimal.ZERO,
+                                BigDecimal.ZERO,
+                                BigDecimal.ZERO,
+                                BigDecimal.ZERO
+                        ));
                     }
 
-                    // Save transactions to the database
                     return transactionRepository.saveAll(transactions)
                             .collectList()
-                            .flatMap(savedTransactions -> {
+                            .map(savedTransactions -> {
                                 BigDecimal totalIncome = savedTransactions.stream()
                                         .filter(t -> "INCOME".equals(t.getType()))
                                         .map(Transaction::getAmount)
@@ -88,19 +101,18 @@ public class TransactionServiceImpl implements TransactionService {
                                         .map(Transaction::getAmount)
                                         .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-
                                 BigDecimal netGainLoss = totalIncome.subtract(totalExpense).subtract(totalInvestment);
                                 BigDecimal netGain = netGainLoss.compareTo(BigDecimal.ZERO) > 0 ? netGainLoss : BigDecimal.ZERO;
                                 BigDecimal netLoss = netGainLoss.compareTo(BigDecimal.ZERO) < 0 ? netGainLoss.abs() : BigDecimal.ZERO;
 
-                                return Mono.just(new DashboardReportDTO(
+                                return new DashboardReportDTO(
                                         savedTransactions,
                                         totalIncome,
                                         totalExpense,
                                         totalInvestment,
                                         netGain,
                                         netLoss
-                                ));
+                                );
                             });
                 })
                 .onErrorResume(e -> {
