@@ -1,29 +1,24 @@
 package com.akentech.shared.models;
 
 import jakarta.validation.constraints.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
-import org.bson.types.ObjectId;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+import org.springframework.data.relational.core.mapping.Table;
 
+import java.beans.Transient;
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.util.UUID;
 
-@Document(value = "expense")
+@Table("expense")
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
 @Data
 public class Expense {
+
     @Id
-    @JsonSerialize(using = ToStringSerializer.class)
-    private ObjectId id;
+    private Long id;
 
     @NotBlank(message = "Reason is mandatory")
     private String reason;
@@ -48,8 +43,7 @@ public class Expense {
     @NotBlank(message = "CreatedBy is mandatory")
     private String createdBy;
 
-    /*private LocalDateTime createdAt;*/
-
+    @Transient // Prevents R2DBC from persisting this method
     public void calculateDueBalance() {
         if (this.expectedAmount != null && this.amountPaid != null) {
             this.dueBalance = this.expectedAmount.subtract(this.amountPaid);

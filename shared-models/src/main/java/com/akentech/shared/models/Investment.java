@@ -1,24 +1,21 @@
 package com.akentech.shared.models;
 
 import jakarta.validation.constraints.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.relational.core.mapping.Table;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-@Document(collection = "investments")
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Table("investment")
 public class Investment {
     @Id
-    private String id;
+    private Long id;
 
     @NotNull(message = "Initial amount is required")
     @DecimalMin(value = "1.0", message = "Initial amount must be greater than zero")

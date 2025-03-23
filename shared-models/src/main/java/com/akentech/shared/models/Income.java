@@ -3,23 +3,20 @@ package com.akentech.shared.models;
 import jakarta.validation.constraints.*;
 import lombok.*;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
-import org.bson.types.ObjectId;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+import org.springframework.data.relational.core.mapping.Table;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-@Document(value = "income")
-@AllArgsConstructor
-@NoArgsConstructor
-@Builder
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@Table("income")
 public class Income {
+
     @Id
-    @JsonSerialize(using = ToStringSerializer.class)
-    private ObjectId id;
+    private Long id;
 
     @NotBlank(message = "Reason is mandatory")
     private String reason;
