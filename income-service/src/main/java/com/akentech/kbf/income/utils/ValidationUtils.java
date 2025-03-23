@@ -1,12 +1,12 @@
 package com.akentech.kbf.income.utils;
 
 import com.akentech.shared.models.Income;
-import org.bson.types.ObjectId;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.UUID;
 
 public class ValidationUtils {
 
@@ -27,8 +27,8 @@ public class ValidationUtils {
         validateCreatedBy(income.getCreatedBy());
     }
 
-    public static void validateIncomeId(String id) {
-        if (!ObjectId.isValid(id)) {
+    public static void validateIncomeId(Long id) {
+        if (id == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid ID format");
         }
     }
