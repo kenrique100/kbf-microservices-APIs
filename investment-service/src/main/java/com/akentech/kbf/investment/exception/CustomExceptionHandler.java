@@ -10,13 +10,13 @@ public class CustomExceptionHandler {
 
     @ExceptionHandler(InvalidRequestException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public String handleInvalidRequestException(InvalidRequestException ex) {
-        return ex.getMessage();
+    public ErrorResponse handleInvalidRequestException(InvalidRequestException ex) {
+        return new ErrorResponse(HttpStatus.BAD_REQUEST.value(), ex.getMessage());
     }
 
     @ExceptionHandler(InsufficientBalanceException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public String handleInsufficientBalanceException(InsufficientBalanceException ex) {
-        return ex.getMessage();
+    public ErrorResponse handleInsufficientBalanceException(InsufficientBalanceException ex) {
+        return new ErrorResponse(HttpStatus.BAD_REQUEST.value(), ex.getMessage());
     }
 }

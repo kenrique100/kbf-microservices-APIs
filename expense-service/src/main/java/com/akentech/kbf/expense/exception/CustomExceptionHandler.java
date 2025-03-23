@@ -5,6 +5,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.bind.support.WebExchangeBindException;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -26,4 +27,11 @@ public class CustomExceptionHandler {
                 errors.put(error.getField(), error.getDefaultMessage()));
         return errors;
     }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponse handleResponseStatusException(ResponseStatusException ex) {
+        return new ErrorResponse(ex.getStatusCode().value(), ex.getReason());
+    }
+
 }
