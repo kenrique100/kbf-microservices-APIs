@@ -23,5 +23,5 @@ public class ProcessedDataIncome {
     private String status;
     private String errorMessage;
     @Builder.Default
-    private Integer attempts = 0;
+    private Integer attempts = 1;
 }

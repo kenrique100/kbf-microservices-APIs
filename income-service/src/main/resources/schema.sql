@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS income (
     quantity INTEGER NOT NULL,
     amount_received DECIMAL(19,2) NOT NULL,
     expected_amount DECIMAL(19,2) NOT NULL,
-    due_balance DECIMAL(19,2),
+    due_balance DECIMAL(19,2) DEFAULT 0,
     receipt VARCHAR(255) NOT NULL,
     created_by VARCHAR(100) NOT NULL,
     status VARCHAR(50),
@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS processed_data_income (
     processed_by VARCHAR(100) NOT NULL,
     status VARCHAR(50) NOT NULL,
     error_message TEXT,
-    attempts INTEGER NOT NULL DEFAULT 0
+    attempts INTEGER NOT NULL DEFAULT 1
     );
 
 -- Create indexes
