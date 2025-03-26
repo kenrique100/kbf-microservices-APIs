@@ -1,6 +1,7 @@
 package com.akentech.kbf.income.service.impl;
 
 import com.akentech.kbf.income.repository.IncomeRepository;
+import com.akentech.kbf.income.repository.ProcessedDataIncomeRepository;
 import com.akentech.kbf.income.service.IncomeService;
 import com.akentech.kbf.income.utils.ValidationUtils;
 import com.akentech.shared.models.Income;
@@ -8,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.reactive.TransactionalOperator;
 import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -17,6 +19,8 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class IncomeServiceImpl implements IncomeService {
     private final IncomeRepository incomeRepository;
+    private final ProcessedDataIncomeRepository processedDataRepo;
+    private final TransactionalOperator transactionalOperator;
 
     @Override
     public Flux<Income> getAllIncomes() {
@@ -57,8 +61,20 @@ public class IncomeServiceImpl implements IncomeService {
     @Override
     public Mono<Void> deleteIncome(Long id) {
         return incomeRepository.existsById(id)
-                .flatMap(exists -> exists
-                        ? incomeRepository.deleteById(id)
-                        : Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Income not found")));
+                .flatMap(exists -> {
+                    if (!exists) {
+                        return Mono.error(new ResponseStatusException(
+                                HttpStatus.NOT_FOUND,
+                                "Income not found with ID: " + id));
+                    }
+                    return incomeRepository.deleteById(id)
+                            .then(processedDataRepo.deleteByIncomeId(id))
+                            .onErrorResume(e -> {
+                                log.error("Failed to delete income with ID {}: {}", id, e.getMessage());
+                                return Mono.error(new ResponseStatusException(
+                                        HttpStatus.INTERNAL_SERVER_ERROR,
+                                        "Failed to delete income"));
+                            });
+                });
     }
 }

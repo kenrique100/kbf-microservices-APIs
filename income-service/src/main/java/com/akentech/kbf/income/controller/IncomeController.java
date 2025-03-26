@@ -12,10 +12,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.io.InputStream;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/incomes")
@@ -52,10 +54,12 @@ public class IncomeController {
                 .collectList()
                 .flatMapMany(dataBuffers -> {
                     try (InputStream is = new PartInputStream(dataBuffers)) {
-                        return Flux.fromIterable(ValidationUtils.validateAndReadIncomeDataFromExcel(is))
+                        List<Income> incomes = ValidationUtils.validateAndReadIncomeDataFromExcel(is);
+                        return Flux.fromIterable(incomes)
                                 .doOnNext(income -> income.setStatus(Income.ProcessingStatus.PENDING.toString()));
                     } catch (Exception e) {
-                        return Flux.error(e);
+                        return Flux.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                                "Error processing file: " + e.getMessage()));
                     }
                 })
                 .flatMap(incomeProducer::sendIncome)
@@ -65,6 +69,7 @@ public class IncomeController {
     @PutMapping("/{id}")
     public Mono<Income> updateIncome(@PathVariable Long id, @RequestBody @Valid Income income) {
         ValidationUtils.validateIncomeId(id);
+        income.calculateDueBalance();
         ValidationUtils.validateIncome(income);
         return incomeService.updateIncome(id, income)
                 .switchIfEmpty(Mono.error(() -> new IncomeNotFoundException("Income not found with ID: " + id)))
