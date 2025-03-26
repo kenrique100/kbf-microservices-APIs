@@ -9,7 +9,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.reactive.TransactionalOperator;
 import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -20,25 +19,54 @@ import reactor.core.publisher.Mono;
 public class IncomeServiceImpl implements IncomeService {
     private final IncomeRepository incomeRepository;
     private final ProcessedDataIncomeRepository processedDataRepo;
-    private final TransactionalOperator transactionalOperator;
 
     @Override
     public Flux<Income> getAllIncomes() {
-        return incomeRepository.findAll();
+        return incomeRepository.findAll()
+                .doOnError(error -> log.error("Error fetching all incomes: {}", error.getMessage()));
+    }
+
+    @Override
+    public Flux<Income> getPendingIncomes() {
+        return incomeRepository.findByStatus(Income.ProcessingStatus.PENDING.name())
+                .doOnError(error -> log.error("Error fetching pending incomes: {}", error.getMessage()));
+    }
+
+    @Override
+    public Flux<Income> getFailedIncomes() {
+        return incomeRepository.findByStatus(Income.ProcessingStatus.FAILED.name())
+                .doOnError(error -> log.error("Error fetching failed incomes: {}", error.getMessage()));
     }
 
     @Override
     public Mono<Income> getIncomeById(Long id) {
         return incomeRepository.findById(id)
-                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Income not found")));
+                .switchIfEmpty(Mono.error(new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Income not found with ID: " + id
+                )))
+                .doOnError(error -> log.error("Error fetching income with ID {}: {}", id, error.getMessage()));
     }
 
     @Override
     public Mono<Income> createIncome(Income income) {
         ValidationUtils.validateIncome(income);
         income.calculateDueBalance();
-        income.setStatus(Income.ProcessingStatus.PENDING.toString());
-        return incomeRepository.save(income);
+        income.setStatus(Income.ProcessingStatus.PENDING.name());
+
+        return incomeRepository.existsByReasonAndIncomeDateAndAmountReceived(
+                        income.getReason(),
+                        income.getIncomeDate(),
+                        income.getAmountReceived())
+                .flatMap(exists -> {
+                    if (Boolean.TRUE.equals(exists)) {
+                        return Mono.error(new ResponseStatusException(
+                                HttpStatus.CONFLICT,
+                                "Duplicate income with same reason, date and amount"));
+                    }
+                    return incomeRepository.save(income);
+                })
+                .doOnError(error -> log.error("Error creating income: {}", error.getMessage()));
     }
 
     @Override
@@ -53,9 +81,15 @@ public class IncomeServiceImpl implements IncomeService {
                     existingIncome.calculateDueBalance();
                     existingIncome.setReceipt(income.getReceipt());
                     existingIncome.setCreatedBy(income.getCreatedBy());
+                    existingIncome.setStatus(Income.ProcessingStatus.PENDING.name());
+                    existingIncome.setErrorMessage(null);
                     return incomeRepository.save(existingIncome);
                 })
-                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Income not found")));
+                .switchIfEmpty(Mono.error(new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Income not found with ID: " + id
+                )))
+                .doOnError(error -> log.error("Error updating income with ID {}: {}", id, error.getMessage()));
     }
 
     @Override
@@ -68,13 +102,28 @@ public class IncomeServiceImpl implements IncomeService {
                                 "Income not found with ID: " + id));
                     }
                     return incomeRepository.deleteById(id)
-                            .then(processedDataRepo.deleteByIncomeId(id))
-                            .onErrorResume(e -> {
-                                log.error("Failed to delete income with ID {}: {}", id, e.getMessage());
-                                return Mono.error(new ResponseStatusException(
-                                        HttpStatus.INTERNAL_SERVER_ERROR,
-                                        "Failed to delete income"));
-                            });
-                });
+                            .then(processedDataRepo.deleteByIncomeId(id));
+                })
+                .doOnError(error -> log.error("Error deleting income with ID {}: {}", id, error.getMessage()));
+    }
+
+    @Override
+    public Mono<Income> retryFailedIncome(Long id) {
+        return incomeRepository.findById(id)
+                .flatMap(income -> {
+                    if (!Income.ProcessingStatus.FAILED.name().equals(income.getStatus())) {
+                        return Mono.error(new ResponseStatusException(
+                                HttpStatus.BAD_REQUEST,
+                                "Income is not in FAILED status"));
+                    }
+                    income.setStatus(Income.ProcessingStatus.PENDING.name());
+                    income.setErrorMessage(null);
+                    return incomeRepository.save(income);
+                })
+                .switchIfEmpty(Mono.error(new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Income not found with ID: " + id
+                )))
+                .doOnError(error -> log.error("Error retrying failed income with ID {}: {}", id, error.getMessage()));
     }
 }

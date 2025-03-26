@@ -1,6 +1,5 @@
 package com.akentech.kbf.income.controller;
 
-import com.akentech.kbf.income.exception.IncomeNotFoundException;
 import com.akentech.kbf.income.kafka.producer.IncomeProducer;
 import com.akentech.kbf.income.utils.PartInputStream;
 import com.akentech.kbf.income.utils.ValidationUtils;
@@ -15,7 +14,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
 import java.io.InputStream;
 import java.util.List;
 
@@ -24,7 +22,6 @@ import java.util.List;
 @RequiredArgsConstructor
 @Slf4j
 public class IncomeController {
-
     private final IncomeService incomeService;
     private final IncomeProducer incomeProducer;
 
@@ -33,18 +30,28 @@ public class IncomeController {
         return incomeService.getAllIncomes();
     }
 
+    @GetMapping("/pending")
+    public Flux<Income> getPendingIncomes() {
+        return incomeService.getPendingIncomes();
+    }
+
+    @GetMapping("/failed")
+    public Flux<Income> getFailedIncomes() {
+        return incomeService.getFailedIncomes();
+    }
+
     @GetMapping("/{id}")
     public Mono<Income> getIncomeById(@PathVariable Long id) {
         ValidationUtils.validateIncomeId(id);
-        return incomeService.getIncomeById(id)
-                .switchIfEmpty(Mono.error(() -> new IncomeNotFoundException("Income not found with ID: " + id)))
-                .doOnError(error -> log.error("Error fetching income with ID {}: {}", id, error.getMessage()));
+        return incomeService.getIncomeById(id);
     }
+
     @PostMapping
     @ResponseStatus(HttpStatus.ACCEPTED)
     public Mono<Void> createIncome(@RequestBody @Valid Income income) {
-        income.setStatus(Income.ProcessingStatus.PENDING.toString());
-        return incomeProducer.sendIncome(income);
+        return incomeService.createIncome(income)
+                .flatMap(incomeProducer::sendIncome)
+                .then();
     }
 
     @PostMapping(value = "/upload", consumes = "multipart/form-data")
@@ -58,30 +65,32 @@ public class IncomeController {
                         return Flux.fromIterable(incomes)
                                 .doOnNext(income -> income.setStatus(Income.ProcessingStatus.PENDING.toString()));
                     } catch (Exception e) {
-                        return Flux.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        return Flux.error(new ResponseStatusException(
+                                HttpStatus.BAD_REQUEST,
                                 "Error processing file: " + e.getMessage()));
                     }
                 })
-                .flatMap(incomeProducer::sendIncome)
+                .flatMap(income -> incomeService.createIncome(income)
+                        .flatMap(incomeProducer::sendIncome))
                 .then();
     }
 
     @PutMapping("/{id}")
     public Mono<Income> updateIncome(@PathVariable Long id, @RequestBody @Valid Income income) {
         ValidationUtils.validateIncomeId(id);
-        income.calculateDueBalance();
-        ValidationUtils.validateIncome(income);
-        return incomeService.updateIncome(id, income)
-                .switchIfEmpty(Mono.error(() -> new IncomeNotFoundException("Income not found with ID: " + id)))
-                .doOnError(error -> log.error("Error updating income with ID {}: {}", id, error.getMessage()));
+        return incomeService.updateIncome(id, income);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public Mono<Void> deleteIncome(@PathVariable Long id) {
         ValidationUtils.validateIncomeId(id);
-        return incomeService.deleteIncome(id)
-                .switchIfEmpty(Mono.error(() -> new IncomeNotFoundException("Income not found with ID: " + id)))
-                .doOnError(error -> log.error("Error deleting income with ID {}: {}", id, error.getMessage()));
+        return incomeService.deleteIncome(id);
+    }
+
+    @PostMapping("/{id}/retry")
+    public Mono<Income> retryFailedIncome(@PathVariable Long id) {
+        ValidationUtils.validateIncomeId(id);
+        return incomeService.retryFailedIncome(id);
     }
 }

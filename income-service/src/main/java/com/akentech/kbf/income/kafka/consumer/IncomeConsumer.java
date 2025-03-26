@@ -1,6 +1,7 @@
 package com.akentech.kbf.income.kafka.consumer;
 
 import com.akentech.kbf.income.exception.DuplicateIncomeException;
+import com.akentech.kbf.income.kafka.producer.TransactionProducer;
 import com.akentech.kbf.income.repository.IncomeRepository;
 import com.akentech.kbf.income.repository.ProcessedDataIncomeRepository;
 import com.akentech.kbf.income.utils.ValidationUtils;
@@ -26,6 +27,7 @@ public class IncomeConsumer {
 
     private final IncomeRepository incomeRepository;
     private final ProcessedDataIncomeRepository processedDataRepo;
+    private final TransactionProducer transactionProducer;
     private final TransactionalOperator transactionalOperator;
 
     @KafkaListener(topics = "income-processing-topic", groupId = "income-group")
@@ -35,6 +37,11 @@ public class IncomeConsumer {
     )
     public void processIncome(Income income) {
         log.info("Processing income: {}", income.getId());
+
+        // Set initial status if not set
+        if (income.getStatus() == null) {
+            income.setStatus(Income.ProcessingStatus.PROCESSING.name());
+        }
 
         // Calculate due balance before processing
         calculateAndSetDueBalance(income);
@@ -48,11 +55,11 @@ public class IncomeConsumer {
                                         "Duplicate income with reason: " + income.getReason() +
                                                 " and date: " + income.getIncomeDate()));
                             }
-                            return processValidIncome(income);
+                            return processIncomeRecord(income);
                         })
-                        .onErrorResume(e -> handleFailedIncome(income, e))
+                        .onErrorResume(e -> handleProcessingError(income, e))
         ).subscribe(
-                result -> log.info("Successfully processed income ID: {}", result.getId()),
+                result -> log.info("Income processing completed for ID: {}", result.getId()),
                 error -> log.error("Failed to process income: {}", error.getMessage())
         );
     }
@@ -66,7 +73,7 @@ public class IncomeConsumer {
         }
     }
 
-    private Mono<Income> processValidIncome(Income income) {
+    private Mono<Income> processIncomeRecord(Income income) {
         return Mono.fromCallable(() -> {
                     ValidationUtils.validateIncome(income);
                     income.setStatus(Income.ProcessingStatus.SUCCESS.name());
@@ -74,35 +81,35 @@ public class IncomeConsumer {
                 })
                 .flatMap(incomeRepository::save)
                 .flatMap(savedIncome -> {
-                    ProcessedDataIncome processedData = ProcessedDataIncome.builder()
-                            .incomeId(savedIncome.getId())
-                            .processedAmount(savedIncome.getAmountReceived()) // Store the processed amount
-                            .status(savedIncome.getStatus())
-                            .processedAt(LocalDate.now())
-                            .processedBy(SYSTEM_USER)
-                            .build();
-
-                    return processedDataRepo.save(processedData)
-                            .thenReturn(savedIncome);
+                    // Only for successful records, create processed data and transaction
+                    if (Income.ProcessingStatus.SUCCESS.name().equals(savedIncome.getStatus())) {
+                        return createProcessedData(savedIncome)
+                                .then(createTransactionRecord(savedIncome))
+                                .thenReturn(savedIncome);
+                    }
+                    return Mono.just(savedIncome);
                 });
     }
 
-    private Mono<Income> handleFailedIncome(Income income, Throwable error) {
+    private Mono<ProcessedDataIncome> createProcessedData(Income income) {
+        ProcessedDataIncome processedData = ProcessedDataIncome.builder()
+                .incomeId(income.getId())
+                .processedAmount(income.getAmountReceived())
+                .status(income.getStatus())
+                .processedAt(LocalDate.now())
+                .processedBy(SYSTEM_USER)
+                .build();
+
+        return processedDataRepo.save(processedData);
+    }
+
+    private Mono<Void> createTransactionRecord(Income income) {
+        return transactionProducer.sendTransaction(income);
+    }
+
+    private Mono<Income> handleProcessingError(Income income, Throwable error) {
         income.setStatus(Income.ProcessingStatus.FAILED.name());
         income.setErrorMessage(error.getMessage());
-
-        return incomeRepository.save(income)
-                .flatMap(savedIncome -> {
-                    ProcessedDataIncome processedData = ProcessedDataIncome.builder()
-                            .incomeId(savedIncome.getId())
-                            .status(savedIncome.getStatus())
-                            .errorMessage(savedIncome.getErrorMessage())
-                            .processedAt(LocalDate.now())
-                            .processedBy(SYSTEM_USER)
-                            .build();
-
-                    return processedDataRepo.save(processedData)
-                            .thenReturn(savedIncome);
-                });
+        return incomeRepository.save(income);
     }
 }

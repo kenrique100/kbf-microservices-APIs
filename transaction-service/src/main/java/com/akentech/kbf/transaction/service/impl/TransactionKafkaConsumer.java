@@ -19,8 +19,14 @@ import java.time.LocalDate;
 public class TransactionKafkaConsumer {
     private final TransactionRepository transactionRepository;
 
-    @KafkaListener(topics = "income-topic", groupId = "transaction-group")
+    @KafkaListener(topics = "income-transaction-topic", groupId = "transaction-group")
     public Mono<Void> consumeIncome(Income income) {
+        // Only create transaction if income is successful
+        if (!Income.ProcessingStatus.SUCCESS.name().equals(income.getStatus())) {
+            log.warn("Skipping transaction creation for non-success income: {}", income.getId());
+            return Mono.empty();
+        }
+
         return transactionRepository.save(
                         new Transaction(
                                 "INCOME",

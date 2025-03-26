@@ -11,4 +11,9 @@ public interface IncomeService {
     Mono<Income> createIncome(Income income);
     Mono<Income> updateIncome(Long id, Income income);
     Mono<Void> deleteIncome(Long id);
+
+    // Additional methods for pending and failed incomes
+    Flux<Income> getPendingIncomes();
+    Flux<Income> getFailedIncomes();
+    Mono<Income> retryFailedIncome(Long id);
 }
