@@ -11,7 +11,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -37,14 +36,13 @@ public class ValidationUtils {
         List<Income> incomes = new ArrayList<>();
 
         try (Workbook workbook = new XSSFWorkbook(inputStream)) {
-            Sheet sheet = workbook.getSheetAt(0); // Assuming data is in the first sheet
+            Sheet sheet = workbook.getSheetAt(0);
             for (Row row : sheet) {
-                if (row.getRowNum() == 0) {
-                    continue; // Skip header row
-                }
+                if (row.getRowNum() == 0) continue;
 
                 Income income = new Income();
                 try {
+                    // Read and set all fields
                     income.setIncomeDate(getCellValueAsLocalDate(row.getCell(0)));
                     income.setReason(getCellValueAsString(row.getCell(1)));
                     income.setQuantity(getCellValueAsInt(row.getCell(2)));
@@ -53,20 +51,19 @@ public class ValidationUtils {
                     income.setReceipt(getCellValueAsString(row.getCell(5)));
                     income.setCreatedBy(getCellValueAsString(row.getCell(6)));
 
-                    validateIncome(income); // Validate the income object
+                    // Calculate and validate
+                    income.calculateDueBalance();
+                    validateIncome(income);
                     incomes.add(income);
-                } catch (DateTimeParseException e) {
+                } catch (Exception e) {
                     throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                            "Invalid date format in row " + (row.getRowNum() + 1) + ". Expected format: yyyy-MM-dd");
-                } catch (IllegalStateException | NumberFormatException e) {
-                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                            "Invalid numeric value in row " + (row.getRowNum() + 1));
+                            "Error in row " + (row.getRowNum() + 1) + ": " + e.getMessage());
                 }
             }
         }
-
         return incomes;
     }
+
 
     private static LocalDate getCellValueAsLocalDate(Cell cell) {
         if (cell == null) {
@@ -114,23 +111,76 @@ public class ValidationUtils {
 
     public static void validateIncome(Income income) {
         if (income == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Income object cannot be null");
+            throw new ValidationException("Income object cannot be null");
         }
 
-        validateIncomeDate(income.getIncomeDate());
-        validateReason(income.getReason());
-        validateQuantity(income.getQuantity());
-        validateAmountReceived(income.getAmountReceived());
-        validateExpectedAmount(income.getExpectedAmount());
-        validateReceipt(income.getReceipt());
-        validateCreatedBy(income.getCreatedBy());
+        // Ensure due balance is calculated
+        if (income.getDueBalance() == null) {
+            income.calculateDueBalance();
+        }
 
-        // Validate business logic
+        List<String> errors = new ArrayList<>();
+
+        // Validate required fields
+        if (income.getIncomeDate() == null) errors.add("Income date is required");
+        if (income.getReason() == null || income.getReason().trim().isEmpty()) errors.add("Reason is mandatory");
+        if (income.getAmountReceived() == null) errors.add("Amount received is required");
+        if (income.getExpectedAmount() == null) errors.add("Expected amount is required");
+        if (income.getReceipt() == null || income.getReceipt().trim().isEmpty()) errors.add("Receipt is required");
+        if (income.getCreatedBy() == null || income.getCreatedBy().trim().isEmpty()) errors.add("CreatedBy is required");
+
+        // Validate field formats if values exist
+        try {
+            if (income.getIncomeDate() != null) validateIncomeDate(income.getIncomeDate());
+        } catch (ResponseStatusException e) {
+            errors.add(e.getReason());
+        }
+
+        try {
+            if (income.getReason() != null) validateReason(income.getReason());
+        } catch (ResponseStatusException e) {
+            errors.add(e.getReason());
+        }
+
+        try {
+            validateQuantity(income.getQuantity());
+        } catch (ResponseStatusException e) {
+            errors.add(e.getReason());
+        }
+
+        try {
+            if (income.getAmountReceived() != null) validateAmountReceived(income.getAmountReceived());
+        } catch (ResponseStatusException e) {
+            errors.add(e.getReason());
+        }
+
+        try {
+            if (income.getExpectedAmount() != null) validateExpectedAmount(income.getExpectedAmount());
+        } catch (ResponseStatusException e) {
+            errors.add(e.getReason());
+        }
+
+        try {
+            if (income.getReceipt() != null) validateReceipt(income.getReceipt());
+        } catch (ResponseStatusException e) {
+            errors.add(e.getReason());
+        }
+
+        try {
+            if (income.getCreatedBy() != null) validateCreatedBy(income.getCreatedBy());
+        } catch (ResponseStatusException e) {
+            errors.add(e.getReason());
+        }
+
+        // Business logic validation
         if (income.getExpectedAmount() != null &&
                 income.getAmountReceived() != null &&
                 income.getAmountReceived().compareTo(income.getExpectedAmount()) > 0) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Amount received cannot be greater than expected amount");
+            errors.add("Amount received cannot be greater than expected amount");
+        }
+
+        if (!errors.isEmpty()) {
+            throw new ValidationException(String.join("; ", errors));
         }
     }
 
