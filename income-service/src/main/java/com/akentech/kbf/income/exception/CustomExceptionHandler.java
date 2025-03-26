@@ -1,6 +1,7 @@
 package com.akentech.kbf.income.exception;
 
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+import jakarta.validation.ValidationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -63,5 +64,17 @@ public class CustomExceptionHandler {
             status = HttpStatus.INTERNAL_SERVER_ERROR;
         }
         return new ResponseEntity<>(new ErrorResponse(status.value(), ex.getReason()), status);
+    }
+
+    @ExceptionHandler(DuplicateIncomeException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ErrorResponse handleDuplicate(DuplicateIncomeException ex) {
+        return new ErrorResponse(409, ex.getMessage());
+    }
+
+    @ExceptionHandler(ValidationException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponse handleValidation(ValidationException ex) {
+        return new ErrorResponse(400, ex.getMessage());
     }
 }

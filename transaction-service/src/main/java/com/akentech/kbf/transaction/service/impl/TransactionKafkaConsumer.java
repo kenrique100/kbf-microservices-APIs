@@ -1,55 +1,69 @@
 package com.akentech.kbf.transaction.service.impl;
 
-import com.akentech.kbf.kafka.utils.LoggingUtil;
 import com.akentech.shared.models.Expense;
 import com.akentech.shared.models.Income;
 import com.akentech.shared.models.Investment;
 import com.akentech.kbf.transaction.model.Transaction;
 import com.akentech.kbf.transaction.repository.TransactionRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
 
 import java.time.LocalDate;
 
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class TransactionKafkaConsumer {
-
     private final TransactionRepository transactionRepository;
 
-    public TransactionKafkaConsumer(TransactionRepository transactionRepository) {
-        this.transactionRepository = transactionRepository;
-    }
-
     @KafkaListener(topics = "income-topic", groupId = "transaction-group")
-    public void consumeIncome(Income income) {
-        try {
-            Transaction transaction = new Transaction("INCOME", income.getId().toString(), income.getIncomeDate(), income.getAmountReceived(), income.getCreatedBy());
-            transactionRepository.save(transaction).subscribe();
-            LoggingUtil.logInfo("Income transaction saved: " + income.getId());
-        } catch (Exception e) {
-            LoggingUtil.logError("Error processing income transaction: " + e.getMessage());
-        }
+    public Mono<Void> consumeIncome(Income income) {
+        return transactionRepository.save(
+                        new Transaction(
+                                "INCOME",
+                                income.getId().toString(),
+                                income.getIncomeDate(),
+                                income.getAmountReceived(),
+                                income.getCreatedBy()
+                        )
+                )
+                .doOnSuccess(t -> log.info("Income transaction saved: {}", income.getId()))
+                .doOnError(e -> log.error("Error processing income transaction: {}", e.getMessage()))
+                .then();
     }
 
     @KafkaListener(topics = "expense-topic", groupId = "transaction-group")
-    public void consumeExpense(Expense expense) {
-        try {
-            Transaction transaction = new Transaction("EXPENSE", expense.getId().toString(), expense.getExpenseDate(), expense.getAmountPaid(), expense.getCreatedBy());
-            transactionRepository.save(transaction).subscribe();
-            LoggingUtil.logInfo("Expense transaction saved: " + expense.getId());
-        } catch (Exception e) {
-            LoggingUtil.logError("Error processing expense transaction: " + e.getMessage());
-        }
+    public Mono<Void> consumeExpense(Expense expense) {
+        return transactionRepository.save(
+                        new Transaction(
+                                "EXPENSE",
+                                expense.getId().toString(),
+                                expense.getExpenseDate(),
+                                expense.getAmountPaid(),
+                                expense.getCreatedBy()
+                        )
+                )
+                .doOnSuccess(t -> log.info("Expense transaction saved: {}", expense.getId()))
+                .doOnError(e -> log.error("Error processing expense transaction: {}", e.getMessage()))
+                .then();
     }
 
     @KafkaListener(topics = "investment-topic", groupId = "transaction-group")
-    public void consumeInvestment(Investment investment) {
-        try {
-            Transaction transaction = new Transaction("INVESTMENT", investment.getId().toString(), LocalDate.now(), investment.getCurrentBalance(), investment.getCreatedBy());
-            transactionRepository.save(transaction).subscribe();
-            LoggingUtil.logInfo("Investment transaction saved: " + investment.getId());
-        } catch (Exception e) {
-            LoggingUtil.logError("Error processing investment transaction: " + e.getMessage());
-        }
+    public Mono<Void> consumeInvestment(Investment investment) {
+        return transactionRepository.save(
+                        new Transaction(
+                                "INVESTMENT",
+                                investment.getId().toString(),
+                                LocalDate.now(),
+                                investment.getCurrentBalance(),
+                                investment.getCreatedBy()
+                        )
+                )
+                .doOnSuccess(t -> log.info("Investment transaction saved: {}", investment.getId()))
+                .doOnError(e -> log.error("Error processing investment transaction: {}", e.getMessage()))
+                .then();
     }
 }

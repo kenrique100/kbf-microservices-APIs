@@ -6,6 +6,7 @@ import org.apache.poi.ss.usermodel.CellType;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 
 public class ExcelUtil {
 
@@ -17,8 +18,12 @@ public class ExcelUtil {
         if (cell == null) {
             return null;
         }
-        cell.setCellType(CellType.STRING);
-        return cell.getStringCellValue();
+        if (cell.getCellType() == CellType.STRING) {
+            return cell.getStringCellValue();
+        } else if (cell.getCellType() == CellType.NUMERIC) {
+            return String.valueOf(cell.getNumericCellValue());
+        }
+        return null;
     }
 
     public static LocalDate getCellValueAsLocalDate(Cell cell) {
@@ -28,7 +33,11 @@ public class ExcelUtil {
         if (cell.getCellType() == CellType.NUMERIC) {
             return cell.getLocalDateTimeCellValue().toLocalDate();
         } else if (cell.getCellType() == CellType.STRING) {
-            return LocalDate.parse(cell.getStringCellValue(), DateTimeFormatter.ISO_LOCAL_DATE);
+            try {
+                return LocalDate.parse(cell.getStringCellValue(), DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+            } catch (DateTimeParseException e) {
+                throw new IllegalArgumentException("Invalid date format in Excel file. Expected format: yyyy-MM-dd");
+            }
         }
         throw new IllegalArgumentException("Cell is not a valid date: " + cell);
     }

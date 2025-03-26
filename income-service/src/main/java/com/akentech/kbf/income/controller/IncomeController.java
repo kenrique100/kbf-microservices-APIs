@@ -1,6 +1,8 @@
 package com.akentech.kbf.income.controller;
 
 import com.akentech.kbf.income.exception.IncomeNotFoundException;
+import com.akentech.kbf.income.kafka.producer.IncomeProducer;
+import com.akentech.kbf.income.utils.PartInputStream;
 import com.akentech.kbf.income.utils.ValidationUtils;
 import com.akentech.shared.models.Income;
 import com.akentech.kbf.income.service.IncomeService;
@@ -8,9 +10,12 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.io.InputStream;
 
 @RestController
 @RequestMapping("/api/incomes")
@@ -19,6 +24,7 @@ import reactor.core.publisher.Mono;
 public class IncomeController {
 
     private final IncomeService incomeService;
+    private final IncomeProducer incomeProducer;
 
     @GetMapping
     public Flux<Income> getAllIncomes() {
@@ -32,13 +38,28 @@ public class IncomeController {
                 .switchIfEmpty(Mono.error(() -> new IncomeNotFoundException("Income not found with ID: " + id)))
                 .doOnError(error -> log.error("Error fetching income with ID {}: {}", id, error.getMessage()));
     }
-
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public Mono<Income> createIncome(@RequestBody @Valid Income income) {
-        ValidationUtils.validateIncome(income);
-        return incomeService.createIncome(income)
-                .doOnError(error -> log.error("Error creating income: {}", error.getMessage()));
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public Mono<Void> createIncome(@RequestBody @Valid Income income) {
+        income.setStatus(Income.ProcessingStatus.PENDING.toString());
+        return incomeProducer.sendIncome(income);
+    }
+
+    @PostMapping(value = "/upload", consumes = "multipart/form-data")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public Mono<Void> uploadIncomeData(@RequestPart("file") FilePart filePart) {
+        return filePart.content()
+                .collectList()
+                .flatMapMany(dataBuffers -> {
+                    try (InputStream is = new PartInputStream(dataBuffers)) {
+                        return Flux.fromIterable(ValidationUtils.validateAndReadIncomeDataFromExcel(is))
+                                .doOnNext(income -> income.setStatus(Income.ProcessingStatus.PENDING.toString()));
+                    } catch (Exception e) {
+                        return Flux.error(e);
+                    }
+                })
+                .flatMap(incomeProducer::sendIncome)
+                .then();
     }
 
     @PutMapping("/{id}")

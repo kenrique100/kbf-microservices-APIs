@@ -5,19 +5,18 @@ import com.akentech.kbf.income.service.IncomeService;
 import com.akentech.kbf.income.utils.ValidationUtils;
 import com.akentech.shared.models.Income;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class IncomeServiceImpl implements IncomeService {
-
     private final IncomeRepository incomeRepository;
-    private final KafkaTemplate<String, Object> kafkaTemplate;
 
     @Override
     public Flux<Income> getAllIncomes() {
@@ -34,12 +33,8 @@ public class IncomeServiceImpl implements IncomeService {
     public Mono<Income> createIncome(Income income) {
         ValidationUtils.validateIncome(income);
         income.calculateDueBalance();
-
-        return incomeRepository.save(income)
-                .map(savedIncome -> {
-                    kafkaTemplate.send("income-topic", savedIncome.getId().toString(), savedIncome);
-                    return savedIncome;
-                });
+        income.setStatus(Income.ProcessingStatus.PENDING.toString());
+        return incomeRepository.save(income);
     }
 
     @Override
@@ -54,7 +49,6 @@ public class IncomeServiceImpl implements IncomeService {
                     existingIncome.calculateDueBalance();
                     existingIncome.setReceipt(income.getReceipt());
                     existingIncome.setCreatedBy(income.getCreatedBy());
-
                     return incomeRepository.save(existingIncome);
                 })
                 .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Income not found")));

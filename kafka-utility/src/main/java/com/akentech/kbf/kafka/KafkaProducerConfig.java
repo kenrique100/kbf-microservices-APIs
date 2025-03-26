@@ -28,6 +28,9 @@ public class KafkaProducerConfig {
         configProps.put(ProducerConfig.RETRIES_CONFIG, 3);
         configProps.put(ProducerConfig.ACKS_CONFIG, "all");
         configProps.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, true);
+        configProps.put(ProducerConfig.DELIVERY_TIMEOUT_MS_CONFIG, 120000);
+        configProps.put(ProducerConfig.REQUEST_TIMEOUT_MS_CONFIG, 60000);
+        configProps.put(ProducerConfig.MAX_BLOCK_MS_CONFIG, 60000);
         return new DefaultKafkaProducerFactory<>(configProps);
     }
 
