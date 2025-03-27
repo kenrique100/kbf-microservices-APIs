@@ -1,21 +1,22 @@
 package com.akentech.kbf.income.controller;
 
+import com.akentech.kbf.income.exception.DuplicateIncomeException;
 import com.akentech.kbf.income.kafka.producer.IncomeProducer;
-import com.akentech.kbf.income.utils.PartInputStream;
+import com.akentech.kbf.income.utils.FileProcessor;
 import com.akentech.kbf.income.utils.ValidationUtils;
 import com.akentech.shared.models.Income;
 import com.akentech.kbf.income.service.IncomeService;
+import com.akentech.shared.models.UploadResult;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import java.io.InputStream;
-import java.util.List;
+
+
 
 @RestController
 @RequestMapping("/api/incomes")
@@ -24,6 +25,7 @@ import java.util.List;
 public class IncomeController {
     private final IncomeService incomeService;
     private final IncomeProducer incomeProducer;
+    private final FileProcessor fileProcessor;
 
     @GetMapping
     public Flux<Income> getAllIncomes() {
@@ -49,30 +51,30 @@ public class IncomeController {
     @PostMapping
     @ResponseStatus(HttpStatus.ACCEPTED)
     public Mono<Void> createIncome(@RequestBody @Valid Income income) {
-        return incomeService.createIncome(income)
-                .flatMap(incomeProducer::sendIncome)
+        return incomeService.checkForDuplicate(income)
+                .flatMap(isDuplicate -> {
+                    if (isDuplicate) {
+                        log.warn("Duplicate income detected: {}", income);
+                        return Mono.error(new DuplicateIncomeException("Duplicate income detected"));
+                    }
+                    return incomeService.createIncome(income)
+                            .doOnSuccess(savedIncome -> log.info("Income created with ID: {}", savedIncome.getId()))
+                            .flatMap(incomeProducer::sendIncome);
+                })
                 .then();
     }
 
     @PostMapping(value = "/upload", consumes = "multipart/form-data")
-    @ResponseStatus(HttpStatus.ACCEPTED)
-    public Mono<Void> uploadIncomeData(@RequestPart("file") FilePart filePart) {
-        return filePart.content()
-                .collectList()
-                .flatMapMany(dataBuffers -> {
-                    try (InputStream is = new PartInputStream(dataBuffers)) {
-                        List<Income> incomes = ValidationUtils.validateAndReadIncomeDataFromExcel(is);
-                        return Flux.fromIterable(incomes)
-                                .doOnNext(income -> income.setStatus(Income.ProcessingStatus.PENDING.toString()));
-                    } catch (Exception e) {
-                        return Flux.error(new ResponseStatusException(
-                                HttpStatus.BAD_REQUEST,
-                                "Error processing file: " + e.getMessage()));
-                    }
+    public Mono<UploadResult> uploadIncomeData(@RequestPart("file") FilePart filePart) {
+        return fileProcessor.process(filePart)
+                .map(processedCount -> {
+                    log.info("File processed successfully. Records: {}", processedCount);
+                    return new UploadResult(processedCount, "Upload successful");
                 })
-                .flatMap(income -> incomeService.createIncome(income)
-                        .flatMap(incomeProducer::sendIncome))
-                .then();
+                .onErrorResume(e -> {
+                    log.error("Error processing file upload: {}", e.getMessage());
+                    return Mono.just(new UploadResult(0, "Upload failed: " + e.getMessage()));
+                });
     }
 
     @PutMapping("/{id}")

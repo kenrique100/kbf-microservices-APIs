@@ -128,10 +128,9 @@ public class CustomExceptionHandler {
     @ExceptionHandler(DataIntegrityViolationException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponse handleDataIntegrityViolation(DataIntegrityViolationException ex) {
-        String message = "Data integrity violation";
-        if (ex.getMessage() != null && ex.getMessage().contains("null value in column")) {
-            message = "Missing required field: " +
-                    ex.getMessage().split("column \"")[1].split("\"")[0];
+        String message = "Cannot delete: Record is referenced by other data";
+        if (ex.getMessage() != null && ex.getMessage().contains("constraint")) {
+            message = "Cannot delete: Record is used in other transactions";
         }
 
         return ErrorResponse.builder()
@@ -141,4 +140,5 @@ public class CustomExceptionHandler {
                 .timestamp(Instant.now())
                 .build();
     }
+
 }
