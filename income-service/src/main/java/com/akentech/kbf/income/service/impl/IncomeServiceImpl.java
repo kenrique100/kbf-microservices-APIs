@@ -3,7 +3,6 @@ package com.akentech.kbf.income.service.impl;
 import com.akentech.kbf.income.repository.IncomeRepository;
 import com.akentech.kbf.income.repository.ProcessedDataIncomeRepository;
 import com.akentech.kbf.income.service.IncomeService;
-import com.akentech.kbf.income.utils.ValidationUtils;
 import com.akentech.shared.models.Income;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,6 +11,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.time.LocalDateTime;
 
 @Slf4j
 @Service
@@ -33,6 +34,15 @@ public class IncomeServiceImpl implements IncomeService {
     }
 
     @Override
+    public Mono<Boolean> checkForDuplicate(Income income) {
+        return incomeRepository.existsByReasonAndIncomeDateAndAmountReceived(
+                income.getReason(),
+                income.getIncomeDate(),
+                income.getAmountReceived()
+        );
+    }
+
+    @Override
     public Flux<Income> getFailedIncomes() {
         return incomeRepository.findByStatus(Income.ProcessingStatus.FAILED.name())
                 .doOnError(error -> log.error("Error fetching failed incomes: {}", error.getMessage()));
@@ -50,22 +60,12 @@ public class IncomeServiceImpl implements IncomeService {
 
     @Override
     public Mono<Income> createIncome(Income income) {
-        ValidationUtils.validateIncome(income);
         income.calculateDueBalance();
         income.setStatus(Income.ProcessingStatus.PENDING.name());
+        income.setCreatedDate(LocalDateTime.now());
 
-        return incomeRepository.existsByReasonAndIncomeDateAndAmountReceived(
-                        income.getReason(),
-                        income.getIncomeDate(),
-                        income.getAmountReceived())
-                .flatMap(exists -> {
-                    if (Boolean.TRUE.equals(exists)) {
-                        return Mono.error(new ResponseStatusException(
-                                HttpStatus.CONFLICT,
-                                "Duplicate income with same reason, date and amount"));
-                    }
-                    return incomeRepository.save(income);
-                })
+        return incomeRepository.save(income)
+                .doOnSuccess(savedIncome -> log.info("Income created with ID: {}", savedIncome.getId()))
                 .doOnError(error -> log.error("Error creating income: {}", error.getMessage()));
     }
 
