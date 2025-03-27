@@ -19,7 +19,7 @@ public class TransactionProducer {
     public Mono<Void> sendTransaction(Income income) {
         return Mono.fromCallable(() -> {
                     CompletableFuture<SendResult<String, Income>> future =
-                            kafkaTemplate.send("income-transaction-topic", income);
+                            kafkaTemplate.send("income-processed-topic", income);
 
                     return future.handle((result, ex) -> {
                         if (ex != null) {
