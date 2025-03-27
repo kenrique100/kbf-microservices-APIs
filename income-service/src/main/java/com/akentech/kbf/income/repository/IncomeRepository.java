@@ -7,10 +7,10 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Repository
 public interface IncomeRepository extends ReactiveCrudRepository<Income, Long> {
-    Flux<Income> findByReasonAndIncomeDate(String reason, LocalDate incomeDate);
     Flux<Income> findByStatus(String status);
     Mono<Boolean> existsByReasonAndIncomeDateAndAmountReceived(
             String reason,

@@ -16,4 +16,5 @@ public interface IncomeService {
     Flux<Income> getPendingIncomes();
     Flux<Income> getFailedIncomes();
     Mono<Income> retryFailedIncome(Long id);
+    Mono<Boolean> checkForDuplicate(Income income);
 }
