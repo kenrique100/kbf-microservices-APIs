@@ -13,6 +13,4 @@ public interface ProcessedDataIncomeRepository extends ReactiveCrudRepository<Pr
     @Modifying
     @Query("DELETE FROM processed_data_income WHERE income_id = :incomeId")
     Mono<Void> deleteByIncomeId(@Param("incomeId") Long incomeId);
-
-    Mono<ProcessedDataIncome> findFirstByIncomeIdOrderByProcessedAtDesc(Long incomeId);
 }

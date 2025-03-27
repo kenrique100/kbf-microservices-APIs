@@ -1,32 +1,44 @@
 package com.akentech.kbf.income.utils;
 
 import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.core.io.buffer.DataBufferUtils;
 
 import java.io.InputStream;
 import java.util.List;
+import java.util.Objects;
 
-public class PartInputStream extends InputStream {
-
+public final class PartInputStream extends InputStream {
     private final List<DataBuffer> dataBuffers;
     private int currentBufferIndex = 0;
     private int currentBufferPosition = 0;
+    private boolean closed = false;
 
     public PartInputStream(List<DataBuffer> dataBuffers) {
-        this.dataBuffers = dataBuffers;
+        this.dataBuffers = Objects.requireNonNull(dataBuffers, "DataBuffers cannot be null");
     }
 
     @Override
     public int read() {
-        if (currentBufferIndex >= dataBuffers.size()) return -1;
-
-        DataBuffer currentBuffer = dataBuffers.get(currentBufferIndex);
-
-        if (currentBufferPosition >= currentBuffer.readableByteCount()) {
-            currentBufferIndex++;
-            currentBufferPosition = 0;
-            return read();
+        if (closed) {
+            throw new IllegalStateException("Stream already closed");
         }
 
-        return currentBuffer.getByte(currentBufferPosition++) & 0xFF;
+        while (currentBufferIndex < dataBuffers.size()) {
+            DataBuffer currentBuffer = dataBuffers.get(currentBufferIndex);
+            if (currentBufferPosition < currentBuffer.readableByteCount()) {
+                return currentBuffer.getByte(currentBufferPosition++) & 0xFF;
+            }
+            currentBufferIndex++;
+            currentBufferPosition = 0;
+        }
+        return -1;
+    }
+
+    @Override
+    public void close() {
+        if (!closed) {
+            dataBuffers.forEach(DataBufferUtils::release);
+            closed = true;
+        }
     }
 }
